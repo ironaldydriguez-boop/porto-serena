@@ -381,7 +381,7 @@ function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x
 
 /* ---------- flow ---------- */
 let inMenu=true,photo=false;
-function startGame(mode,cont,obj){lockPortrait();$('#menu').classList.add('hide');$('#ui').classList.remove('hide');inMenu=false;
+function startGame(mode,cont,obj){lockLandscape();$('#menu').classList.add('hide');$('#ui').classList.remove('hide');inMenu=false;
   if(cont&&load(obj)){}else{clearWorld();S=freshState(mode);if(mode==='sandbox'){S.m=S.w=S.f=1e9;}cam.tx=0;cam.tz=8;cam.tdist=60;cam.tpitch=.8;
     log(mode==='sandbox'?'Modo sandbox: construa livremente.':'Bem-vindo(a) a Vice City! Comece traçando uma rua.');}
   dirty=true;tick();if(cont)savedRev=rev;showObj();setTool('select');openCat=null;setCatUI();
@@ -648,7 +648,7 @@ async function afterLogin(){stopPoll();aPw='';try{const {data}=await sb.auth.get
   if(local&&local.owner!==user.id&&cloud&&local.ts!==cloud.ts&&(local.b||[]).length){pendingChoice={local,cloud};$('#aOptL').innerHTML='<b>Neste aparelho</b>'+summ(local);$('#aOptC').innerHTML='<b>Na sua conta</b>'+summ(cloud);if(AU.classList.contains('hide'))showAuth('choose');else goStep('choose');return;}
   if(local&&local.owner!==user.id&&!cloud){local.owner=user.id;local.ts=Date.now();writeLocal(local);}
   welcome(cloud);}
-function welcome(cloud){lockPortrait();if(AU.classList.contains('hide')){enterBest(cloud,true);return;}$('#aOkCity').textContent=user&&user.email?`Conectado como ${user.email}`:'';goStep('ok');setTimeout(()=>{hideAuth();enterBest(cloud,true);},1400);}
+function welcome(cloud){lockLandscape();if(AU.classList.contains('hide')){enterBest(cloud,true);return;}$('#aOkCity').textContent=user&&user.email?`Conectado como ${user.email}`:'';goStep('ok');setTimeout(()=>{hideAuth();enterBest(cloud,true);},1400);}
 $('#aOptL').onclick=()=>{const {local}=pendingChoice;local.owner=user.id;local.ts=Date.now();writeLocal(local);setSynced(0);welcome(null);cloudPush(true);};
 $('#aOptC').onclick=()=>{const {cloud}=pendingChoice;writeLocal(cloud);setSynced(cloud.ts||0);welcome(cloud);};
 function enterBest(cloud,greet){const local=readLocal();const mine=local&&user&&local.owner===user.id?local:null;let best=null;
@@ -712,7 +712,7 @@ function fitApp(){const st=navigator.standalone||matchMedia('(display-mode: stan
   const port=innerHeight>=innerWidth,full=st&&isTouch?(port?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width)):0;
   const big=full&&full>innerHeight;document.documentElement.style.setProperty('--appH',big?full+'px':'100%');document.documentElement.style.setProperty('--gap',big?(full-innerHeight)+'px':'0px');resize();}
 addEventListener('resize',fitApp);addEventListener('orientationchange',()=>setTimeout(fitApp,250));fitApp();
-function lockPortrait(){if(!isTouch)return;try{const o=screen.orientation;if(o&&o.lock)o.lock('portrait').catch(()=>{});}catch(e){}}
+function lockLandscape(){if(!isTouch)return;try{const o=screen.orientation;if(o&&o.lock)o.lock('landscape').catch(()=>{});}catch(e){}}
 ['pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target.closest('.btn,.tbtn,.cat,.item,.mrow,.mhero,.speed button,.a-pill,.a-opt,.rnode');if(!t)return;
   const r=t.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');s.className='rip';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
   t.appendChild(s);setTimeout(()=>s.remove(),650);try{if(isTouch&&navigator.vibrate)navigator.vibrate(6);}catch(_){}} ,{passive:true}));
