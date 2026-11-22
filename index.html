@@ -20,29 +20,56 @@
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="var(--c,currentColor)"/><circle cx="12" cy="12" r="5" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.6"/></symbol>
+ <symbol id="i-wood" viewBox="0 0 24 24"><rect x="3" y="8" width="16" height="8" rx="4" fill="var(--c,currentColor)"/><ellipse cx="19" cy="12" rx="2.6" ry="4" fill="#f6d3a8"/><circle cx="19" cy="12" r="1.2" fill="rgba(0,0,0,.25)"/></symbol>
+ <symbol id="i-food" viewBox="0 0 24 24"><path d="M12 7c-2-2.5-7-2-7 3.5 0 5 3.5 9.5 7 9.5s7-4.5 7-9.5C19 5 14 4.5 12 7z" fill="var(--c,currentColor)"/><path d="M12 7c0-2 1-3.5 3-4.2" stroke="#5c8a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+ <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" fill="var(--c,currentColor)"/><path d="M4 7.5L12 12l8-4.5M12 12v9" stroke="rgba(0,0,0,.22)" stroke-width="1.5" fill="none"/></symbol>
+ <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="var(--c,currentColor)"/><path d="M2.5 19c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6z" fill="var(--c,currentColor)"/><circle cx="17" cy="9" r="2.5" fill="var(--c,currentColor)" opacity=".7"/><path d="M15 14.2c3.3-.6 5.9 1.4 6.5 4.8h-4.6" fill="var(--c,currentColor)" opacity=".7"/></symbol>
+ <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="var(--c,currentColor)"/><circle cx="9" cy="10" r="1.2" fill="rgba(0,0,0,.4)"/><circle cx="15" cy="10" r="1.2" fill="rgba(0,0,0,.4)"/><path d="M8.5 14c1.8 2.2 5.2 2.2 7 0" stroke="rgba(0,0,0,.4)" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+ <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 15h9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+ <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></symbol>
+ <symbol id="i-magnet" viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M6 8h4M14 8h4" stroke="currentColor" stroke-width="1.9"/></symbol>
+ <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="17.5" cy="16" r="2.6" fill="currentColor"/></symbol>
+ <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+ <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z" fill="var(--c,currentColor)"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" fill="none" stroke="var(--c,currentColor)" stroke-width="1.8"/><path d="M12 14v4M8 20h8" stroke="var(--c,currentColor)" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8" fill="var(--c,currentColor)"/><path d="M4.5 20c.8-4 3.8-6.5 7.5-6.5s6.7 2.5 7.5 6.5z" fill="var(--c,currentColor)"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="var(--c,currentColor)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2" fill="currentColor"/><rect x="13" y="4" width="7" height="7" rx="2" fill="currentColor" opacity=".7"/><rect x="4" y="13" width="7" height="7" rx="2" fill="currentColor" opacity=".7"/><rect x="13" y="13" width="7" height="7" rx="2" fill="currentColor"/></symbol>
+ <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.2-6.5a1 1 0 0 0 0-1.7L9.5 4.6A1 1 0 0 0 8 5.5z" fill="currentColor"/></symbol>
+ <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 4h11l-2 4 2 4H6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5L12 12l8-4.5M12 12v9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+ <symbol id="i-pad" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5" fill="none" stroke="#fff" stroke-width="1.9"/><path d="M7 11v3M5.5 12.5h3" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="11.5" r="1.2" fill="#fff"/><circle cx="18" cy="13.8" r="1.2" fill="#fff"/></symbol>
+ <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-rotate" viewBox="0 0 64 64"><rect x="22" y="8" width="20" height="36" rx="5" fill="none" stroke="#fff" stroke-width="3"/><path d="M14 50a22 22 0 0 0 36 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M46 46l4 4-5 3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+<div id="rotate" role="alert"><div class="rot-card glass"><svg class="rot-ic"><use href="#i-rotate"/></svg><b>Gire o celular</b><span>Vice City é jogado na vertical.</span></div></div>
 <canvas id="c" tabindex="0"></canvas>
 <div id="tiltT" class="tilt hide"></div><div id="tiltB" class="tilt hide"></div>
 
 <div id="ui" class="hide">
-  <div id="top" class="panel">
-    <span class="brand"><img src="/icons/logo.png" alt="" class="brandlogo">Vice City</span>
-    <span class="chip" title="Moedas"><i style="background:#f4c95d"></i><span id="rM">0</span><small>moedas</small><span class="rate" id="dM"></span></span>
-    <span class="chip" title="Madeira"><i style="background:#a8703f"></i><span id="rW">0</span><small>madeira</small></span>
-    <span class="chip" title="Comida"><i style="background:#8fd18a"></i><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
-    <span class="chip" title="Mercadorias"><i style="background:#c4b3dc"></i><span id="rG">0</span><small>mercadorias</small></span>
-    <span class="chip" title="População"><i style="background:#e9a9b2;border-radius:50%"></i><span id="rP">0</span><small>moradores</small></span>
-    <span class="chip" title="Felicidade média"><i style="background:#9cc7d8;border-radius:50%"></i><span id="rH">0%</span><small>felicidade</small></span>
-    <span class="sp"></span>
-    <button class="tbtn" id="bRes">Pesquisa <span id="rR"></span></button>
-    <span class="chip" id="clock">Dia 1 · 08:00</span>
-    <div class="speed" id="speed"><button data-s="0" aria-label="Pausar">II</button><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="3">3x</button></div>
-    <button class="tbtn" id="bAlign" title="Alinhar construções à rua (F)">Alinhar: sim</button>
-    <button class="tbtn" id="bMusic">Música</button>
-    <button class="tbtn" id="bPhoto">Foto</button>
-    <button class="tbtn" id="bRank">Ranking</button>
-    <button class="tbtn" id="bAcc">Entrar</button>
-    <button class="tbtn hide" id="bInstall">Instalar</button>
-    <button class="tbtn" id="bMenu">Menu</button>
+  <div id="top" class="glass">
+    <div class="hud-res">
+      <span class="brand"><img src="/icons/logo.png" alt="" class="brandlogo"><b>Vice City</b></span>
+      <span class="chip" title="Moedas"><svg class="ic" style="--c:#ffd36b"><use href="#i-coin"/></svg><span id="rM">0</span><small>moedas</small><span class="rate" id="dM"></span></span>
+      <span class="chip" title="Madeira"><svg class="ic" style="--c:#e0a66e"><use href="#i-wood"/></svg><span id="rW">0</span><small>madeira</small></span>
+      <span class="chip" title="Comida"><svg class="ic" style="--c:#a6e39b"><use href="#i-food"/></svg><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
+      <span class="chip" title="Mercadorias"><svg class="ic" style="--c:#d6c6f2"><use href="#i-box"/></svg><span id="rG">0</span><small>mercadorias</small></span>
+      <span class="chip" title="Moradores"><svg class="ic" style="--c:#ffb7c2"><use href="#i-people"/></svg><span id="rP">0</span><small>moradores</small></span>
+      <span class="chip" title="Felicidade média"><svg class="ic" style="--c:#9fd8f0"><use href="#i-smile"/></svg><span id="rH">0%</span><small>felicidade</small></span>
+    </div>
+    <div class="hud-ctl">
+      <button class="tbtn" id="bRes" title="Pesquisa"><svg class="ic"><use href="#i-flask"/></svg><span class="lb">Pesquisa</span><span id="rR"></span></button>
+      <span class="chip" id="clock">Dia 1 · 08:00</span>
+      <div class="speed" id="speed"><button data-s="0" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="3">3x</button></div>
+      <button class="tbtn ico on" id="bAlign" title="Alinhar construções à rua (F)"><svg class="ic"><use href="#i-magnet"/></svg><span class="lb">Alinhar</span></button>
+      <button class="tbtn ico" id="bMusic" title="Música"><svg class="ic"><use href="#i-music"/></svg><span class="lb">Música</span></button>
+      <button class="tbtn ico" id="bPhoto" title="Modo foto"><svg class="ic"><use href="#i-camera"/></svg><span class="lb">Foto</span></button>
+      <button class="tbtn ico" id="bRank" title="Ranking"><svg class="ic"><use href="#i-trophy"/></svg><span class="lb">Ranking</span></button>
+      <button class="tbtn ico" id="bAcc" title="Conta"><svg class="ic"><use href="#i-user"/></svg><span class="lb" id="bAccL">Entrar</span></button>
+      <button class="tbtn ico hide" id="bInstall" title="Instalar"><svg class="ic"><use href="#i-down"/></svg><span class="lb">Instalar</span></button>
+      <button class="tbtn ico" id="bMenu" title="Menu"><svg class="ic"><use href="#i-grid"/></svg><span class="lb">Menu</span></button>
+    </div>
   </div>
 
   <div id="side">
@@ -138,17 +165,21 @@
 </div>
 
 <div id="menu" class="modal hide">
-  <div class="panel">
+  <div class="mcard glass">
     <img src="/icons/logo.png" alt="" class="menulogo">
     <h1>Vice City</h1>
-    <p>Uma cidade à beira-mar construída peça por peça. Jogue no computador ou no celular, sempre de onde parou.</p>
-    <button class="btn" id="mCont">Continuar</button>
-    <button class="btn pri" id="mCamp">Nova campanha</button>
-    <button class="btn" id="mSand">Modo sandbox</button>
-    <button class="btn" id="mRank">Ranking das cidades</button>
-    <button class="btn" id="mAcc">Entrar / salvar na nuvem</button>
-    <button class="btn hide" id="mInstall">Instalar no dispositivo</button>
-    <button class="btn" id="mHelp">Controles</button>
+    <p>Sua cidade à beira-mar, peça por peça. Continue de onde parou em qualquer aparelho.</p>
+    <button class="mhero" id="mCont"><svg class="ic"><use href="#i-play"/></svg><span class="lb">Continuar</span></button>
+    <div class="mgroup">
+      <button class="mrow" id="mCamp"><span class="mic" style="--c:#ff9f43"><svg class="ic"><use href="#i-flag"/></svg></span><span class="lb">Nova campanha</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <button class="mrow" id="mSand"><span class="mic" style="--c:#5ac8fa"><svg class="ic"><use href="#i-cube"/></svg></span><span class="lb">Modo sandbox</span><svg class="chev"><use href="#i-chev"/></svg></button>
+    </div>
+    <div class="mgroup">
+      <button class="mrow" id="mRank"><span class="mic" style="--c:#ffcc00"><svg class="ic"><use href="#i-trophy"/></svg></span><span class="lb">Ranking das cidades</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <button class="mrow" id="mAcc"><span class="mic" style="--c:#34c759"><svg class="ic"><use href="#i-user"/></svg></span><span class="lb">Entrar e sincronizar</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <button class="mrow hide" id="mInstall"><span class="mic" style="--c:#af52de"><svg class="ic"><use href="#i-down"/></svg></span><span class="lb">Instalar no aparelho</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <button class="mrow" id="mHelp"><span class="mic" style="--c:#8e8e93"><svg class="ic"><use href="#i-pad"/></svg></span><span class="lb">Controles</span><svg class="chev"><use href="#i-chev"/></svg></button>
+    </div>
     <div class="fine">Protótipo jogável</div>
   </div>
 </div>
