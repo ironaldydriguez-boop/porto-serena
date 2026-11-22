@@ -1,6 +1,6 @@
 {
-  "name": "Porto Serena",
-  "short_name": "Porto Serena",
+  "name": "Vice City",
+  "short_name": "Vice City",
   "description": "Construa uma vila mediterrânea em voxel, peça por peça, sem grade.",
   "lang": "pt-BR",
   "start_url": "/",
@@ -8,8 +8,8 @@
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
-  "background_color": "#0c1a30",
-  "theme_color": "#102a32",
+  "background_color": "#151b3c",
+  "theme_color": "#151b3c",
   "categories": ["games", "entertainment"],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
@@ -17,6 +17,6 @@
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "/icons/screenshot-wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "A vila de Porto Serena" }
+    { "src": "/icons/screenshot-wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "A cidade de Vice City" }
   ]
 }

@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Porto Serena</title>
+<title>Vice City</title>
 <meta name="description" content="Construa uma vila mediterrânea em voxel, peça por peça, sem grade.">
 <meta name="theme-color" content="#102a32">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Porto Serena">
+<meta name="apple-mobile-web-app-title" content="Vice City">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -24,7 +25,7 @@
 
 <div id="ui" class="hide">
   <div id="top" class="panel">
-    <span class="brand">Porto Serena</span>
+    <span class="brand"><img src="/icons/logo.png" alt="" class="brandlogo">Vice City</span>
     <span class="chip" title="Moedas"><i style="background:#f4c95d"></i><span id="rM">0</span><small>moedas</small><span class="rate" id="dM"></span></span>
     <span class="chip" title="Madeira"><i style="background:#a8703f"></i><span id="rW">0</span><small>madeira</small></span>
     <span class="chip" title="Comida"><i style="background:#8fd18a"></i><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
@@ -58,6 +59,69 @@
   </div>
 </div>
 
+
+<section id="auth" class="hide" aria-label="Entrar no Vice City">
+  <header class="a-top">
+    <div class="a-brand"><img src="/icons/logo.png" alt=""><span>Vice City</span></div>
+    <div class="a-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <button class="a-link" id="aGuest">Jogar sem conta</button>
+  </header>
+  <button class="a-back hide" id="aBack" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="a-stage">
+    <div class="a-step" data-s="1">
+      <h1 class="a-h1" id="aH1">Construa a cidade <em>que você imagina.</em></h1>
+      <div class="a-deck" id="aDeck"></div>
+      <p class="a-sub">Comece no computador e continue no celular, exatamente de onde parou.</p>
+      <div class="a-actions"><button class="a-pill" id="aStart">Começar</button><button class="a-txt" id="aGuest2">Jogar sem conta</button></div>
+    </div>
+    <div class="a-step a-form" data-s="2">
+      <h2 class="a-h2">Qual é o seu <em>e-mail?</em></h2>
+      <p class="a-sub2">Se você já tem conta, a gente encontra. Se não tem, criamos uma agora.</p>
+      <div class="a-field"><input id="aEmail" type="email" inputmode="email" autocomplete="username" placeholder="voce@email.com" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="E-mail"></div>
+      <button class="a-fix hide" id="aFix"></button>
+      <p class="a-err" id="aErr2" role="alert"></p>
+      <button class="a-pill wide" id="aNext2" disabled>Continuar</button>
+    </div>
+    <div class="a-step a-form" data-s="3">
+      <div class="a-row"><span class="a-who" id="aWho"></span></div>
+      <h2 class="a-h2">Agora, sua <em>senha.</em></h2>
+      <p class="a-sub2">Use a senha da sua conta. Primeira vez aqui? Essa será a senha da conta nova.</p>
+      <div class="a-field pw"><input id="aPass" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha"><button class="a-eye" id="aEye" type="button" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+      <div class="a-meter" id="aMeter"></div>
+      <p class="a-caps hide" id="aCaps">Caps Lock está ligado</p>
+      <p class="a-err" id="aErr3" role="alert"></p>
+      <button class="a-pill wide" id="aNext3" disabled>Continuar</button>
+      <button class="a-txt sm" id="aForgot">Esqueci minha senha</button>
+    </div>
+    <div class="a-step a-form" data-s="mail">
+      <div class="a-row"><div class="a-mail" aria-hidden="true"><span></span></div></div>
+      <h2 class="a-h2">Confirme seu <em>e-mail.</em></h2>
+      <p class="a-sub2">Enviamos um link para <b id="aMailTo"></b>. Toque nele e você entra aqui sozinho, sem digitar nada de novo.</p>
+      <div class="a-wait"><span class="a-spin"></span>Esperando a confirmação…</div>
+      <div class="a-actions col"><a class="a-pill" id="aOpenMail" href="#" target="_blank" rel="noopener">Abrir meu e-mail</a><button class="a-txt sm" id="aResend">Reenviar o link</button></div>
+    </div>
+    <div class="a-step a-form" data-s="reset">
+      <h2 class="a-h2">Crie uma <em>senha nova.</em></h2>
+      <p class="a-sub2">Depois disso você já entra na sua cidade.</p>
+      <div class="a-field"><input id="aNew" type="password" autocomplete="new-password" placeholder="Nova senha" aria-label="Nova senha"></div>
+      <p class="a-err" id="aErrR" role="alert"></p>
+      <button class="a-pill wide" id="aSaveNew">Salvar e entrar</button>
+    </div>
+    <div class="a-step a-form" data-s="choose">
+      <h2 class="a-h2">Encontramos <em>duas cidades.</em></h2>
+      <p class="a-sub2">Qual delas você quer continuar? A outra será substituída.</p>
+      <button class="a-opt" id="aOptC"></button>
+      <button class="a-opt" id="aOptL"></button>
+    </div>
+    <div class="a-step" data-s="ok">
+      <svg class="a-check" viewBox="0 0 64 64" width="88" height="88"><circle cx="32" cy="32" r="29"/><path d="M19 33l9 9 17-19"/></svg>
+      <h2 class="a-h2">Tudo <em>pronto.</em></h2>
+      <p class="a-sub2" id="aOkCity"></p>
+    </div>
+  </div>
+</section>
+
+<div id="handoff" class="panel hide" role="status"><span>Sua cidade foi atualizada pelo seu outro aparelho. O jogo pausou aqui.</span><button class="btn pri" id="hoTake">Continuar aqui</button></div>
 <div id="tip" class="panel hide"></div>
 <div id="toast" class="panel" style="opacity:0"></div>
 
@@ -73,10 +137,11 @@
   <button class="btn" id="pExit">Sair</button>
 </div>
 
-<div id="menu" class="modal">
+<div id="menu" class="modal hide">
   <div class="panel">
-    <h1>Porto Serena</h1>
-    <p>Uma vila à beira-mar construída peça por peça, sem grade e sem pressa.</p>
+    <img src="/icons/logo.png" alt="" class="menulogo">
+    <h1>Vice City</h1>
+    <p>Uma cidade à beira-mar construída peça por peça. Jogue no computador ou no celular, sempre de onde parou.</p>
     <button class="btn" id="mCont">Continuar</button>
     <button class="btn pri" id="mCamp">Nova campanha</button>
     <button class="btn" id="mSand">Modo sandbox</button>
@@ -84,7 +149,7 @@
     <button class="btn" id="mAcc">Entrar / salvar na nuvem</button>
     <button class="btn hide" id="mInstall">Instalar no dispositivo</button>
     <button class="btn" id="mHelp">Controles</button>
-    <div class="fine">Protótipo jogável · nome provisório</div>
+    <div class="fine">Protótipo jogável</div>
   </div>
 </div>
 
@@ -131,21 +196,11 @@
 </div></div>
 
 <div id="acc" class="modal hide"><div class="panel" style="max-width:440px">
-  <h2 id="accH">Sua conta</h2>
-  <div id="accOut">
-    <p class="objp">Entre para guardar a sua cidade na nuvem, jogar em outro aparelho e aparecer no ranking.</p>
-    <form id="accForm" class="form">
-      <label>E-mail<input id="accEmail" type="email" autocomplete="email" required></label>
-      <label>Senha<input id="accPass" type="password" autocomplete="current-password" minlength="6" required></label>
-      <div class="btnrow"><button class="btn pri" type="submit" data-act="in">Entrar</button><button class="btn" type="button" id="accUp">Criar conta</button></div>
-    </form>
-  </div>
-  <div id="accIn" class="hide">
-    <p class="objp" id="accWho"></p>
-    <label class="form">Nome da cidade<input id="accCity" maxlength="32" placeholder="Porto Serena"></label>
-    <div class="btnrow"><button class="btn pri" id="cSave">Salvar na nuvem</button><button class="btn" id="cLoad">Carregar da nuvem</button><button class="btn" id="accOutBtn">Sair</button></div>
-  </div>
-  <p class="objp" id="accMsg" role="status"></p>
+  <h2>Sua conta</h2>
+  <p class="objp" id="accWho"></p>
+  <label class="form">Nome da cidade<input id="accCity" maxlength="32" placeholder="Vice City"></label>
+  <p class="objp" id="accSync" role="status"></p>
+  <div class="btnrow"><button class="btn pri" id="cSync">Sincronizar agora</button><button class="btn" id="accOutBtn">Sair da conta</button></div>
   <div class="btnrow"><button class="btn" data-close>Fechar</button></div>
 </div></div>
 

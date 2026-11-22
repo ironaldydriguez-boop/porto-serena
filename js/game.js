@@ -167,6 +167,7 @@ function clearWild(x,z,r){let n=0;const m=new THREE.Matrix4().makeScale(0,0,0);f
 
 /* ---------- state ---------- */
 let cityName='';try{cityName=localStorage.getItem('ps-city')||'';}catch(e){}
+let rev=0,savedRev=-1,localTs=0;const DEV=(()=>{try{let d=localStorage.getItem('vc-dev');if(!d){d=Math.random().toString(36).slice(2,10);localStorage.setItem('vc-dev',d);}return d;}catch(e){return 'x'+Math.random().toString(36).slice(2,8);}})();
 let S,buildings=[],roads=[],dirty=true,nextId=1;
 function freshState(mode){return{mode,m:500,w:150,f:80,g:0,rp:0,cur:null,done:new Set(),time:0,tod:8/24,day:1,speed:1,obj:0,pop:0,hap:0,staff:1,rates:{},req:null,nextReq:60,sold:0,won:false};}
 const sand=()=>S&&S.mode==='sandbox';
@@ -188,9 +189,9 @@ function makeModel(t,seed,color){const v=new Vox(),R=rng(seed),ex={};MODELS[t](v
   g.userData.h=new THREE.Box3().setFromObject(g).max.y;return g;}
 function addBuilding(o){const d=B[o.t];if(!d)return null;const b={id:o.id||nextId++,t:o.t,x:o.x,z:o.z,a:o.a||0,r:d.r,seed:o.seed||Math.floor(Math.random()*1e9),color:o.color||null,res:o.res||0,fam:o.fam||null,conn:false,hap:0,beauty:0,met:{}};
   nextId=Math.max(nextId,b.id+1);if(d.paint&&!b.color)b.color=WALLS[Math.floor(Math.random()*WALLS.length)];
-  b.obj=makeModel(b.t,b.seed,b.color);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;if(o.anim)popIn(b);return b;}
-function removeBuilding(b){scene.remove(b.obj);if(b.icon)scene.remove(b.icon);buildings=buildings.filter(x=>x!==b);if(S.req&&S.req.id===b.id)clearReq();if(sel===b)select(null);dirty=true;}
-function recolor(b,col){b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
+  b.obj=makeModel(b.t,b.seed,b.color);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;rev++;if(o.anim)popIn(b);return b;}
+function removeBuilding(b){rev++;scene.remove(b.obj);if(b.icon)scene.remove(b.icon);buildings=buildings.filter(x=>x!==b);if(S.req&&S.req.id===b.id)clearReq();if(sel===b)select(null);dirty=true;}
+function recolor(b,col){rev++;b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
 
 /* ---------- roads ---------- */
 const roadMat=new THREE.MeshLambertMaterial({vertexColors:true});
@@ -203,9 +204,9 @@ function ribbon(samples,w,y,cols){const P=[],N=[],Cc=[];for(let i=0;i<samples.le
 function sampleCurve(pts){if(pts.length<2)return pts.map(p=>({x:p.x,z:p.z}));const cv=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p.x,0,p.z)),false,'centripetal');const n=Math.max(2,Math.ceil(cv.getLength()));return cv.getSpacedPoints(n).map(v=>({x:v.x,z:v.z}));}
 function addRoad(pts){const s=sampleCurve(pts);const g=new THREE.Group();const k=roads.length%20*.002;
   const edge=new THREE.Mesh(ribbon(s,1.75,.03+k,['#a99f8a','#b5ab95']),roadMat);const top=new THREE.Mesh(ribbon(s,1.4,.06+k,['#d9ccb0','#cfc1a3','#e0d4ba']),roadMat);
-  edge.receiveShadow=top.receiveShadow=true;g.add(edge,top);scene.add(g);const r={pts,s,obj:g,len:s.length};roads.push(r);
+  edge.receiveShadow=top.receiveShadow=true;g.add(edge,top);scene.add(g);const r={pts,s,obj:g,len:s.length};roads.push(r);rev++;
   for(const p of s){clearWild(p.x,p.z,1.6);for(const b of buildings.slice())if(B[b.t].cat==='dec'&&Math.hypot(b.x-p.x,b.z-p.z)<1.7)removeBuilding(b);}dirty=true;return r;}
-function removeRoad(r){scene.remove(r.obj);roads=roads.filter(x=>x!==r);walkers.forEach(w=>{if(w.road===r)w.road=null;});dirty=true;}
+function removeRoad(r){rev++;scene.remove(r.obj);roads=roads.filter(x=>x!==r);walkers.forEach(w=>{if(w.road===r)w.road=null;});dirty=true;}
 function nearestRoad(x,z,skip){let best=null,bd=1e9;for(const r of roads){if(r===skip)continue;for(let i=0;i<r.s.length;i++){const p=r.s[i],d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;best={x:p.x,z:p.z,r,i};}}}if(best)best.d=Math.sqrt(bd);return best;}
 function recompute(){for(const b of buildings)b.conn=B[b.t].cat==='dec'?true:(()=>{const n=nearestRoad(b.x,b.z);return !!n&&n.d<=b.r+3.6;})();dirty=false;}
 
@@ -224,7 +225,7 @@ function stepWalkers(dt,t){for(const w of walkers){if(!w.road||!roads.includes(w
 /* ---------- camera ---------- */
 const cam={x:0,z:0,yaw:.8,pitch:.72,dist:80,tx:0,tz:0,tyaw:.8,tpitch:.72,tdist:80};
 function camVecs(){const f={x:-Math.sin(cam.yaw),z:-Math.cos(cam.yaw)};return{f,r:{x:-f.z,z:f.x}};}
-function updateCam(dt){const k=1-Math.pow(.0005,dt);for(const p of ['x','z','yaw','pitch','dist'])cam[p]+=(cam['t'+p]-cam[p])*k;
+function updateCam(dt){const k=clamp(1-Math.pow(.0005,dt),0,1);for(const p of ['x','z','yaw','pitch','dist']){cam[p]+=(cam['t'+p]-cam[p])*k;if(!isFinite(cam[p])||!isFinite(cam['t'+p])){Object.assign(cam,{x:0,z:8,yaw:.8,pitch:.75,dist:60,tx:0,tz:8,tyaw:.8,tpitch:.75,tdist:60});break;}}
   const cp=Math.cos(cam.pitch);camera.position.set(cam.x+Math.sin(cam.yaw)*cp*cam.dist,Math.sin(cam.pitch)*cam.dist,cam.z+Math.cos(cam.yaw)*cp*cam.dist);camera.lookAt(cam.x,0,cam.z);}
 function panBy(dx,dz){cam.tx=clamp(cam.tx+dx,-80,80);cam.tz=clamp(cam.tz+dz,-80,80);}
 
@@ -331,7 +332,7 @@ function showObj(){if(sand()){$('#objH').textContent='Modo sandbox';$('#objT').t
   $('#objH').textContent=`Objetivo ${S.obj+1} de ${OBJ.length}`;$('#objT').textContent=OBJ[S.obj].t;$('#objR').textContent=OBJ[S.obj].r?`Recompensa: ${OBJ[S.obj].r} moedas`:'Objetivo final';}
 
 /* ---------- simulation ---------- */
-function tick(){if(dirty)recompute();const sb=sand();let pop=0;const hs=houses();for(const h of hs)pop+=h.res;
+function tick(){rev++;if(dirty)recompute();const sb=sand();let pop=0;const hs=houses();for(const h of hs)pop+=h.res;
   let jobs=0;for(const b of buildings)if(B[b.t].jobs&&b.conn)jobs+=B[b.t].jobs;const staff=jobs?Math.min(1,pop*.7/jobs):1;S.staff=staff;S.pop=pop;
   let df=0,dw=0,dg=0,dm=0;const mills=buildings.filter(b=>b.t==='moinho'&&b.conn);
   for(const b of buildings){if(!b.conn)continue;if(b.t==='fazenda')df+=2.2*staff*(mills.some(m=>dist(m,b)<18)?1.5:1);else if(b.t==='serraria')dw+=1.3*staff;else if(b.t==='oficina')dg+=.9*staff;}
@@ -355,20 +356,20 @@ function tick(){if(dirty)recompute();const sb=sand();let pop=0;const hs=houses()
 function openResearch(){if(sand()){toast('No sandbox tudo já está liberado');return;}$('#research').classList.remove('hide');drawResearch();}
 function drawResearch(){$('#rtree').innerHTML=Object.entries(RS).map(([k,r])=>{const done=S.done.has(k),ok=r.req.every(q=>S.done.has(q)),cur=S.cur===k;
   return `<button class="rnode${done?' done':''}${cur?' cur':''}${!ok&&!done?' lock':''}" data-k="${k}"><b>${r.n}</b><small>${r.d}</small><small>${done?'Concluída':!ok?'Requer: '+r.req.map(q=>RS[q].n).join(', '):cur?`Estudando · ${Math.floor(S.rp)}/${r.cost}`:`Custo: ${r.cost} pontos`}</small></button>`;}).join('');}
-$('#rtree').addEventListener('click',e=>{const b=e.target.closest('.rnode');if(!b)return;const k=b.dataset.k,r=RS[k];if(S.done.has(k)||!r.req.every(q=>S.done.has(q)))return;if(S.cur!==k){S.cur=k;S.rp=0;}drawResearch();hud();});
+$('#rtree').addEventListener('click',e=>{const b=e.target.closest('.rnode');if(!b)return;const k=b.dataset.k,r=RS[k];if(S.done.has(k)||!r.req.every(q=>S.done.has(q)))return;if(S.cur!==k){S.cur=k;S.rp=0;rev++;}drawResearch();hud();});
 $('#bRes').onclick=openResearch;
 $$('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.add('hide'));
 
 /* ---------- save/load ---------- */
 const KEY='porto-serena-save-v1';
-function snapshot(){return {v:1,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,res:b.res,fam:b.fam})),r:roads.map(r=>r.pts),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
-function save(){if(!S||inMenu)return;try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){}}
+function snapshot(){return {v:2,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,res:b.res,fam:b.fam})),r:roads.map(r=>r.pts),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
+function save(){if(!S||inMenu||rev===savedRev)return;localTs=Date.now();savedRev=rev;try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){}}
 function hasSave(){try{return !!localStorage.getItem(KEY);}catch(e){return false;}}
 function clearWorld(){for(const b of buildings.slice())scene.remove(b.obj);buildings=[];for(const r of roads)scene.remove(r.obj);roads=[];for(const w of walkers)scene.remove(w.m);walkers.length=0;
   const m=new THREE.Matrix4();for(const t of wild)if(!t.alive){t.alive=true;m.compose(new THREE.Vector3(t.x,0,t.z),new THREE.Quaternion(),new THREE.Vector3(1,1,1));wildMesh[t.k].setMatrixAt(t.i,m);wildMesh[t.k].instanceMatrix.needsUpdate=true;}
   if(reqMark){scene.remove(reqMark);reqMark=null;}select(null);logs.length=0;$('#log').innerHTML='';}
-function load(obj){try{const o=obj||JSON.parse(localStorage.getItem(KEY));if(o.city&&!cityName)cityName=o.city;clearWorld();S=Object.assign(freshState(o.S.mode),o.S,{done:new Set(o.S.done),req:null});
-  for(const p of o.r)addRoad(p);for(const b of o.b)addBuilding(b);Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:o.cam.dist});return true;}catch(e){return false;}}
+function load(obj){try{const o=obj||JSON.parse(localStorage.getItem(KEY));if(o.city)cityName=o.city;clearWorld();S=Object.assign(freshState(o.S.mode),o.S,{done:new Set(o.S.done),req:null});
+  for(const p of o.r)addRoad(p);for(const b of o.b)addBuilding(b);Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:o.cam.dist});localTs=o.ts||0;savedRev=rev;return true;}catch(e){return false;}}
 
 /* ---------- demo village (menu backdrop & starting town) ---------- */
 function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x:26,z:-6}];addRoad(p);addRoad([{x:0,z:6},{x:2,z:18},{x:-4,z:30}]);
@@ -382,11 +383,11 @@ function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x
 let inMenu=true,photo=false;
 function startGame(mode,cont,obj){$('#menu').classList.add('hide');$('#ui').classList.remove('hide');inMenu=false;
   if(cont&&load(obj)){}else{clearWorld();S=freshState(mode);if(mode==='sandbox'){S.m=S.w=S.f=1e9;}cam.tx=0;cam.tz=8;cam.tdist=60;cam.tpitch=.8;
-    log(mode==='sandbox'?'Modo sandbox: construa livremente.':'Bem-vindo(a) a Porto Serena! Comece traçando uma rua.');}
-  dirty=true;tick();showObj();setTool('select');openCat=null;setCatUI();
+    log(mode==='sandbox'?'Modo sandbox: construa livremente.':'Bem-vindo(a) a Vice City! Comece traçando uma rua.');}
+  dirty=true;tick();if(cont)savedRev=rev;showObj();setTool('select');openCat=null;setCatUI();
   if(!cont&&!hasSave())$('#help').classList.remove('hide');save();}
-$('#mCamp').onclick=()=>startGame('campaign');$('#mSand').onclick=()=>startGame('sandbox');$('#mCont').onclick=()=>startGame(null,true);$('#mHelp').onclick=()=>$('#help').classList.remove('hide');
-$('#bMenu').onclick=()=>{save();inMenu=true;$('#ui').classList.add('hide');$('#menu').classList.remove('hide');$('#mCont').classList.toggle('hide',!hasSave());setTool('select');};
+$('#mCont').onclick=()=>startGame(null,true);$('#mHelp').onclick=()=>$('#help').classList.remove('hide');
+$('#bMenu').onclick=()=>{save();cloudPush();inMenu=true;$('#ui').classList.add('hide');$('#menu').classList.remove('hide');$('#mCont').classList.toggle('hide',!hasSave());setTool('select');};
 $('#speed').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setSpeed(+b.dataset.s);});
 function setSpeed(s){S.speed=s;$$('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===s));}
 function setAlign(v){align=v;$('#bAlign').textContent='Alinhar: '+(v?'sim':'não');}
@@ -480,12 +481,12 @@ function previewFrame(){const tip=$('#tip');ctxBar();if(inMenu||photo){tip.class
 S=freshState('campaign');demoVillage();recompute();S.pop=houses().reduce((a,h)=>a+h.res,0);syncWalkers();
 $('#mCont').classList.toggle('hide',!hasSave());
 let last=performance.now(),acc=0,T=0,saveT=0,cloudT=0;
-function frame(now){const rdt=Math.min(.1,(now-last)/1000);last=now;T+=rdt;
+function frame(now){const rdt=clamp((now-last)/1000,0,.1);last=Math.max(last,now);T+=rdt;
   if(inMenu){cam.tyaw+=rdt*.05;cam.tx=0;cam.tz=8;cam.tdist=62;cam.tpitch=.62;S.tod=(S.tod+rdt/200)%1;}
   else if(!photo){const sp=S.speed;const {f,r}=camVecs(),k=cam.tdist*.9*rdt;
     if(keys.KeyW||keys.ArrowUp)panBy(f.x*k,f.z*k);if(keys.KeyS||keys.ArrowDown)panBy(-f.x*k,-f.z*k);if(keys.KeyA||keys.ArrowLeft)panBy(-r.x*k,-r.z*k);if(keys.KeyD||keys.ArrowRight)panBy(r.x*k,r.z*k);
     const h=S.tod*24,night=h<6||h>=20;S.tod+=rdt*sp/240*(night?2.5:1);if(S.tod>=1){S.tod-=1;S.day++;}
-    acc+=rdt*sp;while(acc>=1){acc-=1;S.time+=1;tick();}saveT+=rdt;if(saveT>20){saveT=0;save();}cloudT+=rdt;if(cloudT>60){cloudT=0;cloudPush(false);}}
+    acc+=rdt*sp;while(acc>=1){acc-=1;S.time+=1;tick();}saveT+=rdt;if(saveT>5){saveT=0;save();}}
   updateCam(rdt);applyLight(S.tod);const wsp=inMenu?1:photo?0:S.speed;stepWalkers(rdt*wsp,T);
   for(const b of buildings)if(b.obj.userData.spin)b.obj.userData.spin.rotation.z+=rdt*.6*(inMenu?1:S.speed);
   if(reqMark&&S.req){const h=buildings.find(x=>x.id===S.req.id);if(h){reqMark.position.set(h.x,(h.obj.userData.h||6)+2.2+Math.sin(T*3)*.4,h.z);reqMark.rotation.y=T*2;}}
@@ -558,38 +559,150 @@ function sfx(kind){try{if(!sfxCtx)sfxCtx=actx||new (window.AudioContext||window.
   else if(kind==='demolish'){o.type='sawtooth';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(50,t+.3);env(.08,.35);}
   else if(kind==='coin'){o.type='square';o.frequency.setValueAtTime(988,t);o.frequency.setValueAtTime(1319,t+.09);env(.05,.4);}}catch(e){}}
 
-/* ---------- cloud: Supabase account, saves, ranking ---------- */
+/* ---------- conta (Supabase): login inteligente, sincronização entre aparelhos, ranking ---------- */
 const CFG=window.PS_CONFIG||{};let sb=null,user=null;
 try{if(window.supabase&&CFG.supabaseUrl)sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}catch(e){sb=null;}
 const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const amsg=t=>{$('#accMsg').textContent=t;};
-function accUI(){$('#bAcc').textContent=user?'Nuvem':'Entrar';$('#bAcc').classList.toggle('cloud',!!user);$('#mAcc').textContent=user?'Conta e nuvem':'Entrar / salvar na nuvem';
-  $('#accOut').classList.toggle('hide',!!user);$('#accIn').classList.toggle('hide',!user);if(user){$('#accWho').textContent='Conectado como '+user.email;$('#accCity').value=cityName;}}
-if(sb){sb.auth.getSession().then(({data})=>{user=data.session?data.session.user:null;accUI();}).catch(()=>{});sb.auth.onAuthStateChange((ev,ss)=>{const was=user;user=ss?ss.user:null;accUI();if(user&&!was&&ev==='SIGNED_IN')cloudPeek();});}
-function openAcc(){amsg(sb?'':'Sem conexão com o servidor agora. O jogo continua salvando neste aparelho.');accUI();$('#acc').classList.remove('hide');}
+const LS={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
+function trad(e){const m=String(e&&e.message||e).toLowerCase();if(m.includes('invalid login'))return 'E-mail ou senha incorretos.';if(m.includes('not confirmed'))return 'Confirme seu e-mail pelo link que enviamos.';
+  if(m.includes('already registered'))return 'Este e-mail já tem conta.';if(m.includes('rate limit')||m.includes('security purposes'))return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.';
+  if(m.includes('failed to fetch')||m.includes('network'))return 'Sem internet no momento.';if(m.includes('password should'))return 'Escolha uma senha mais forte (6+ caracteres).';return 'Algo deu errado: '+(e.message||e);}
+function readLocal(){try{return JSON.parse(localStorage.getItem(KEY));}catch(e){return null;}}
+function writeLocal(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+
+/* --- tela de login --- */
+const AU=$('#auth');let aStep='',aEmail=LS.get('vc-email')||'',aPw='',pollT=null;
+const ORDER=['1','2','3','mail','reset','choose','ok'];
+function buildDeck(){const types=['vila','casa','teatro','sobrado','cafe','moinho','praca'],cols=['#e8907a','#9cc7d8','#f0cf6a','#a9d2b4','#c4b3dc','#f3e3c8','#e9a9b2'];
+  $('#aDeck').innerHTML=types.map((t,i)=>`<div class="a-card${i===3?' c':''}" style="--i:${i-3};--d:${Math.abs(i-3)};transition-delay:${Math.abs(i-3)*55}ms"><div class="a-in" style="background:${cols[i]}"><img src="${thumbs[t]||''}" alt=""></div></div>`).join('')
+   +'<span class="a-tag t1">@familia.moretti</span><span class="a-tag t2">+60 moedas</span><span class="a-tag t3">Dia 12 · 48 moradores</span>';}
+function reveal(el){if(!el)return;if(!el.dataset.split){el.innerHTML=el.innerHTML.split(/(<em>.*?<\/em>)/).map(p=>p.startsWith('<em>')?p.slice(4,-5).split(' ').filter(Boolean).map(w=>`<span class="w acc">${w}</span>`).join(' '):p.split(' ').filter(Boolean).map(w=>`<span class="w">${w}</span>`).join(' ')).join(' ');el.dataset.split='1';}
+  el.querySelectorAll('.w').forEach((w,i)=>{w.style.transitionDelay=(i*65)+'ms';});el.classList.remove('go');void el.offsetWidth;el.classList.add('go');}
+function playIntro(){const d=$('#aDeck');d.classList.remove('fan');reveal($('#aH1'));setTimeout(()=>d.classList.add('fan'),620);}
+function showAuth(step){if(photo)setPhoto(false);$('#menu').classList.add('hide');$('#ui').classList.add('hide');$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});inMenu=true;
+  AU.classList.remove('hide');if(!$('#aDeck').children.length)buildDeck();aStep='';AU.querySelectorAll('.a-step').forEach(s=>s.classList.remove('on'));goStep(step||'1');}
+function hideAuth(){AU.classList.add('hide');stopPoll();}
+function goStep(s){const cur=AU.querySelector('.a-step.on'),nx=AU.querySelector(`.a-step[data-s="${s}"]`);if(!nx||cur===nx)return;const fwd=ORDER.indexOf(s)>=ORDER.indexOf(aStep||'1');
+  if(cur){cur.classList.remove('on');cur.classList.add(fwd?'out-f':'out-b');setTimeout(()=>cur.classList.remove('out-f','out-b'),700);}
+  nx.classList.remove('out-f','out-b');nx.classList.add(fwd?'in-f':'in-b');void nx.offsetWidth;nx.classList.remove('in-f','in-b');nx.classList.add('on');aStep=s;AU.dataset.step=s;
+  const n=s==='1'?1:s==='2'?2:3;$$('.a-dots i').forEach((d,i)=>{d.classList.toggle('on',i<n);d.classList.toggle('cur',i===n-1);});
+  $('#aBack').classList.toggle('hide',!['2','3','mail','reset'].includes(s));
+  if(s==='1')playIntro();if(s==='2'){$('#aEmail').value=aEmail;$('#aErr2').textContent='';emailHint();}
+  if(s==='3'){$('#aWho').textContent=aEmail;$('#aPass').value='';$('#aPass').type='password';$('#aErr3').textContent='';$('#aErr3').classList.remove('ok');$('#aForgot').classList.remove('hl');meter();}
+  reveal(nx.querySelector('.a-h2'));const f=nx.querySelector('input');if(f&&!matchMedia('(pointer:coarse)').matches)setTimeout(()=>f.focus({preventScroll:true}),450);
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(e){}}
+$('#aBack').onclick=()=>{stopPoll();goStep(aStep==='2'?'1':'2');};
+$('#aStart').onclick=()=>goStep('2');
+function guest(){LS.set('vc-guest','1');hideAuth();showMenu();}
+$('#aGuest').onclick=guest;$('#aGuest2').onclick=guest;
+{const deck=$('#aDeck');AU.addEventListener('pointermove',e=>{if(aStep!=='1'||e.pointerType!=='mouse')return;const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;deck.style.transform=`rotateX(${-y*6}deg) rotateY(${x*8}deg)`;});}
+/* e-mail */
+const TYPO={'gmial.com':'gmail.com','gmai.com':'gmail.com','gmal.com':'gmail.com','gmail.co':'gmail.com','gmail.con':'gmail.com','gnail.com':'gmail.com','gamil.com':'gmail.com','hotmial.com':'hotmail.com','hotmai.com':'hotmail.com','hotmail.co':'hotmail.com','hotmal.com':'hotmail.com','outlok.com':'outlook.com','outloo.com':'outlook.com','outlook.co':'outlook.com','yaho.com':'yahoo.com','yahoo.com.b':'yahoo.com.br','iclod.com':'icloud.com','icloud.co':'icloud.com','uol.com':'uol.com.br'};
+const okEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+function emailHint(){const v=$('#aEmail').value.trim().toLowerCase(),d=v.split('@')[1],fix=d&&TYPO[d],b=$('#aFix');b.classList.toggle('hide',!fix);
+  if(fix){b.dataset.v=v.split('@')[0]+'@'+fix;b.innerHTML=`Você quis dizer <b>${esc(b.dataset.v)}</b>?`;}$('#aNext2').disabled=!okEmail(v);}
+$('#aEmail').addEventListener('input',()=>{$('#aErr2').textContent='';emailHint();});
+$('#aFix').onclick=()=>{$('#aEmail').value=$('#aFix').dataset.v;emailHint();$('#aEmail').focus();};
+function next2(){const v=$('#aEmail').value.trim().toLowerCase();if(!okEmail(v)){$('#aErr2').textContent='Confira o e-mail digitado.';shake('#aEmail');return;}
+  aEmail=v;LS.set('vc-email',v);if(!sb){$('#aErr2').textContent='Sem conexão com o servidor agora. Você pode jogar sem conta.';return;}goStep('3');}
+$('#aNext2').onclick=next2;$('#aEmail').addEventListener('keydown',e=>{if(e.key==='Enter')next2();});
+/* senha */
+function meter(){const v=$('#aPass').value;let sc=0;if(v.length>=6)sc++;if(v.length>=10)sc++;if(/[A-Z]/.test(v)&&/[a-z]/.test(v))sc++;if(/\d/.test(v)&&/[^A-Za-z0-9]/.test(v))sc++;
+  const m=$('#aMeter');m.style.setProperty('--p',v?Math.max(.12,sc/4):0);m.dataset.l=v?(v.length<6?'muito curta':['fraca','razoável','boa','forte','forte'][Math.max(0,sc-1)]):'';m.dataset.s=v.length<6?0:sc;$('#aNext3').disabled=v.length<6;}
+$('#aPass').addEventListener('input',()=>{$('#aErr3').textContent='';meter();});
+$('#aPass').addEventListener('keydown',e=>{$('#aCaps').classList.toggle('hide',!(e.getModifierState&&e.getModifierState('CapsLock')));if(e.key==='Enter')submitPw();});
+$('#aEye').onclick=()=>{const p=$('#aPass'),sh=p.type==='password';p.type=sh?'text':'password';$('#aEye').setAttribute('aria-label',sh?'Esconder senha':'Mostrar senha');$('#aEye').classList.toggle('on',sh);};
+$('#aNext3').onclick=()=>submitPw();
+function busy(b,id){const el=$(id);el.disabled=b;el.classList.toggle('busy',b);}
+function shake(sel){const e=$(sel);e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');}
+async function submitPw(){const pw=$('#aPass').value;if(pw.length<6){$('#aErr3').textContent='A senha precisa de pelo menos 6 caracteres.';return;}if($('#aNext3').classList.contains('busy'))return;busy(true,'#aNext3');
+  try{const r=await sb.auth.signInWithPassword({email:aEmail,password:pw});
+    if(!r.error){busy(false,'#aNext3');return afterLogin();}
+    const m=String(r.error.message).toLowerCase();
+    if(m.includes('not confirmed')){aPw=pw;try{await sb.auth.resend({type:'signup',email:aEmail,options:{emailRedirectTo:location.origin}});}catch(e){}busy(false,'#aNext3');return goMail();}
+    if(m.includes('invalid login')){const s=await sb.auth.signUp({email:aEmail,password:pw,options:{emailRedirectTo:location.origin}});
+      if(s.error){$('#aErr3').textContent=trad(s.error);shake('#aPass');}
+      else if(s.data.user&&Array.isArray(s.data.user.identities)&&!s.data.user.identities.length){$('#aErr3').textContent='Essa conta já existe e a senha não confere.';$('#aForgot').classList.add('hl');shake('#aPass');}
+      else if(s.data.session){busy(false,'#aNext3');return afterLogin();}
+      else{aPw=pw;busy(false,'#aNext3');return goMail();}}
+    else $('#aErr3').textContent=trad(r.error);
+  }catch(e){$('#aErr3').textContent=trad(e);}
+  busy(false,'#aNext3');}
+function goMail(){$('#aMailTo').textContent=aEmail;const d=aEmail.split('@')[1]||'';const link=/gmail/.test(d)?'https://mail.google.com':/(outlook|hotmail|live)/.test(d)?'https://outlook.live.com/mail':/yahoo/.test(d)?'https://mail.yahoo.com':/(icloud|me\.com)/.test(d)?'https://www.icloud.com/mail':'';
+  const a=$('#aOpenMail');a.classList.toggle('hide',!link);if(link)a.href=link;goStep('mail');startPoll();}
+function startPoll(){stopPoll();const t0=Date.now();pollT=setInterval(async()=>{if(Date.now()-t0>20*60e3){stopPoll();return;}
+  try{const r=await sb.auth.signInWithPassword({email:aEmail,password:aPw});if(!r.error){stopPoll();afterLogin();}}catch(e){}},4000);}
+function stopPoll(){if(pollT){clearInterval(pollT);pollT=null;}}
+$('#aResend').onclick=async()=>{try{const {error}=await sb.auth.resend({type:'signup',email:aEmail,options:{emailRedirectTo:location.origin}});toast(error?trad(error):'Link reenviado');}catch(e){toast(trad(e));}};
+$('#aForgot').onclick=async()=>{if(!sb)return;const el=$('#aErr3');try{const {error}=await sb.auth.resetPasswordForEmail(aEmail,{redirectTo:location.origin});el.textContent=error?trad(error):'Enviamos um link para você criar uma senha nova.';el.classList.toggle('ok',!error);}catch(e){el.textContent=trad(e);}};
+$('#aNew').addEventListener('keydown',e=>{if(e.key==='Enter')$('#aSaveNew').click();});
+$('#aSaveNew').onclick=async()=>{const pw=$('#aNew').value;if(pw.length<6){$('#aErrR').textContent='Use pelo menos 6 caracteres.';return;}busy(true,'#aSaveNew');
+  try{const {error}=await sb.auth.updateUser({password:pw});busy(false,'#aSaveNew');if(error){$('#aErrR').textContent=trad(error);return;}toast('Senha atualizada');recovering=false;afterLogin();}catch(e){busy(false,'#aSaveNew');$('#aErrR').textContent=trad(e);}};
+
+/* --- depois de entrar: decidir qual cidade abrir --- */
+const summ=o=>`${esc(o.city||'Cidade sem nome')}<small>${(o.S&&o.S.pop)||0} moradores · Dia ${(o.S&&o.S.day)||1} · ${(o.b||[]).length} construções${o.ts?' · '+new Date(o.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</small>`;
+let pendingChoice=null;
+async function afterLogin(){stopPoll();aPw='';try{const {data}=await sb.auth.getUser();user=data.user;}catch(e){}if(!user)return;LS.del('vc-guest');accUI();
+  const cloud=await cloudFetch(),raw=readLocal(),local=raw&&(!raw.owner||raw.owner===user.id)?raw:null;
+  if(local&&local.owner!==user.id&&cloud&&local.ts!==cloud.ts&&(local.b||[]).length){pendingChoice={local,cloud};$('#aOptL').innerHTML='<b>Neste aparelho</b>'+summ(local);$('#aOptC').innerHTML='<b>Na sua conta</b>'+summ(cloud);if(AU.classList.contains('hide'))showAuth('choose');else goStep('choose');return;}
+  if(local&&local.owner!==user.id&&!cloud){local.owner=user.id;local.ts=Date.now();writeLocal(local);}
+  welcome(cloud);}
+function welcome(cloud){if(AU.classList.contains('hide')){enterBest(cloud,true);return;}$('#aOkCity').textContent=user&&user.email?`Conectado como ${user.email}`:'';goStep('ok');setTimeout(()=>{hideAuth();enterBest(cloud,true);},1400);}
+$('#aOptL').onclick=()=>{const {local}=pendingChoice;local.owner=user.id;local.ts=Date.now();writeLocal(local);setSynced(0);welcome(null);cloudPush(true);};
+$('#aOptC').onclick=()=>{const {cloud}=pendingChoice;writeLocal(cloud);setSynced(cloud.ts||0);welcome(cloud);};
+function enterBest(cloud,greet){const local=readLocal();const mine=local&&user&&local.owner===user.id?local:null;let best=null;
+  if(cloud&&mine)best=(cloud.ts||0)>=(mine.ts||0)?cloud:mine;else best=cloud||mine;
+  if(best){if(best===cloud){writeLocal(cloud);setSynced(cloud.ts||0);}startGame(null,true,best);lastFocus=Date.now();if(greet)toast(best===cloud&&cloud.dev&&cloud.dev!==DEV?'Continuando de onde você parou no outro aparelho':'Bem-vindo de volta!');if(best!==cloud)cloudPush();}
+  else showMenu();}
+
+/* --- sincronização --- */
+let syncedTs=Number(LS.get('vc-synced')||0),pushing=false,lastFocus=Date.now(),syncErr=false;
+function setSynced(t){syncedTs=t;LS.set('vc-synced',String(t));syncErr=false;syncUI();}
+async function cloudFetch(){if(!sb||!user)return null;try{const {data,error}=await sb.from('saves').select('data').eq('user_id',user.id).maybeSingle();if(error)throw error;return data?data.data:null;}catch(e){return null;}}
+async function cloudTs(){const {data,error}=await sb.from('saves').select('ts:data->ts').eq('user_id',user.id).maybeSingle();if(error)throw error;return data?Number(data.ts)||0:0;}
+async function cloudPush(force){if(!sb||!user||pushing)return;const local=readLocal();if(!local||local.owner!==user.id)return;if(!force&&(local.ts||0)<=syncedTs)return;pushing=true;
+  try{const ct=await cloudTs();if(!force&&ct>syncedTs&&ct>(local.ts||0)){pushing=false;return applyCloud();}
+    const {error}=await sb.from('saves').upsert({user_id:user.id,data:local});if(error)throw error;setSynced(local.ts||Date.now());
+    if(local.S&&local.S.mode==='campaign')await sb.from('ranking').upsert({user_id:user.id,city:(local.city||'Cidade sem nome').slice(0,32),pop:clamp(local.S.pop|0,0,100000),happiness:clamp(local.S.hap|0,0,100),day:Math.max(1,local.S.day|0),buildings:(local.b||[]).length,goals:clamp(local.S.obj|0,0,100)});
+  }catch(e){syncErr=true;syncUI();}pushing=false;}
+async function cloudCheck(){if(!sb||!user||pushing||!AU.classList.contains('hide'))return;try{const ct=await cloudTs(),local=readLocal(),lt=local&&local.owner===user.id?(local.ts||0):0;
+  if(ct>Math.max(lt,syncedTs))await applyCloud();else if(lt>syncedTs)cloudPush();}catch(e){}}
+async function applyCloud(){const c=await cloudFetch();if(!c)return;writeLocal(c);setSynced(c.ts||0);
+  if(!inMenu&&!photo){const handoff=Date.now()-lastFocus>4000;startGame(null,true,c);
+    if(handoff&&c.dev!==DEV){setSpeed(0);$('#handoff').classList.remove('hide');}else toast('Continuando de onde você parou no outro aparelho');}
+  else $('#mCont').classList.toggle('hide',!hasSave());}
+$('#hoTake').onclick=()=>{$('#handoff').classList.add('hide');setSpeed(1);};
+function syncUI(){const t=syncedTs?new Date(syncedTs).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';const txt=!user?'':syncErr?'Sem conexão: salvando neste aparelho e sincronizando quando voltar a internet.':syncedTs?`Sincronizado às ${t}. Abra em outro aparelho e continue de onde parou.`:'Sincronizando…';
+  const el=$('#accSync');if(el)el.textContent=txt;$('#bAcc').classList.toggle('cloud',!!user&&!syncErr);$('#bAcc').title=txt;}
+setInterval(()=>{if(document.hidden||!user)return;save();cloudPush();},8000);
+setInterval(()=>{if(!document.hidden&&user)cloudCheck();},15000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();cloudPush();}else{lastFocus=Date.now();cloudCheck();}});
+addEventListener('focus',()=>{lastFocus=Date.now();cloudCheck();});
+addEventListener('pagehide',()=>{save();cloudPush();});
+addEventListener('online',()=>{cloudCheck();});
+
+/* --- conta, menu e início --- */
+function accUI(){$('#bAcc').textContent=user?'Conta':'Entrar';$('#mAcc').textContent=user?'Sua conta':'Entrar e sincronizar';if(user){$('#accWho').textContent=user.email;$('#accCity').value=cityName;}syncUI();}
+function openAcc(){if(!user){showAuth(sb?'2':'1');return;}accUI();$('#acc').classList.remove('hide');}
 $('#bAcc').onclick=openAcc;$('#mAcc').onclick=openAcc;
-function trad(e){const m=String(e&&e.message||e).toLowerCase();if(m.includes('invalid login'))return 'E-mail ou senha incorretos.';if(m.includes('not confirmed'))return 'Confirme seu e-mail pelo link que enviamos e tente de novo.';
-  if(m.includes('already registered'))return 'Este e-mail já tem conta. Use Entrar.';if(m.includes('rate limit'))return 'Muitas tentativas. Espere alguns minutos.';if(m.includes('failed to fetch'))return 'Sem internet no momento.';return 'Erro: '+(e.message||e);}
-$('#accForm').addEventListener('submit',async e=>{e.preventDefault();if(!sb)return;amsg('Entrando…');try{const {error}=await sb.auth.signInWithPassword({email:$('#accEmail').value.trim(),password:$('#accPass').value});amsg(error?trad(error):'Conectado!');}catch(err){amsg(trad(err));}});
-$('#accUp').onclick=async()=>{if(!sb)return;const email=$('#accEmail').value.trim(),password=$('#accPass').value;if(!email||password.length<6){amsg('Informe o e-mail e uma senha com pelo menos 6 caracteres.');return;}
-  amsg('Criando conta…');try{const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin}});
-  if(error)amsg(trad(error));else if(!data.session)amsg('Conta criada! Abra o link de confirmação no seu e-mail e depois entre aqui.');else amsg('Conta criada e conectada!');}catch(err){amsg(trad(err));}};
-$('#accOutBtn').onclick=async()=>{try{await sb.auth.signOut();}catch(e){}amsg('Você saiu da conta.');};
-$('#accCity').addEventListener('change',e=>{cityName=e.target.value.trim().slice(0,32);try{localStorage.setItem('ps-city',cityName);}catch(_){}save();cloudPush(false);});
-$('#cSave').onclick=()=>cloudPush(true);$('#cLoad').onclick=()=>cloudPull();
-let pushing=false;
-async function cloudPush(manual){if(!sb||!user||!S||(inMenu&&!manual)||pushing)return;if(inMenu){amsg('Comece ou continue um jogo para salvar.');return;}pushing=true;
-  try{const {error}=await sb.from('saves').upsert({user_id:user.id,data:snapshot()});if(error)throw error;
-    if(S.mode==='campaign'){const {error:e2}=await sb.from('ranking').upsert({user_id:user.id,city:(cityName||'Vila sem nome').slice(0,32),pop:Math.min(S.pop,100000),happiness:clamp(S.hap,0,100),day:Math.max(1,S.day),buildings:buildings.length,goals:Math.min(S.obj,100)});if(e2)throw e2;}
-    if(manual){amsg('Cidade salva na nuvem.');toast('Salvo na nuvem');}}catch(e){if(manual)amsg('Não deu para salvar: '+trad(e));}pushing=false;}
-async function cloudPeek(){try{const {data}=await sb.from('saves').select('updated_at').eq('user_id',user.id).maybeSingle();if(data)amsg(`Há uma cidade sua na nuvem (${new Date(data.updated_at).toLocaleString('pt-BR')}). Use “Carregar da nuvem” para abri-la.`);}catch(e){}}
-async function cloudPull(){if(!sb||!user)return;amsg('Carregando…');try{const {data,error}=await sb.from('saves').select('data').eq('user_id',user.id).maybeSingle();if(error)throw error;
-  if(!data){amsg('Ainda não há cidade salva na nuvem.');return;}$('#acc').classList.add('hide');setPhoto(false);startGame(null,true,data.data);toast('Cidade carregada da nuvem');}catch(e){amsg(trad(e));}}
+$('#accCity').addEventListener('change',e=>{cityName=e.target.value.trim().slice(0,32);LS.set('ps-city',cityName);rev++;save();cloudPush();});
+$('#cSync').onclick=async()=>{save();await cloudPush(true);await cloudCheck();toast(syncErr?'Sem conexão agora':'Sincronizado');};
+$('#accOutBtn').onclick=async()=>{save();await cloudPush();try{await sb.auth.signOut();}catch(e){}user=null;LS.del('vc-synced');syncedTs=0;LS.del('vc-guest');accUI();showAuth('1');};
+if(sb)sb.auth.onAuthStateChange((ev,ss)=>{if(ev==='PASSWORD_RECOVERY'){recovering=true;user=ss?ss.user:null;showAuth('reset');return;}if(ev==='SIGNED_OUT'){user=null;accUI();}else if(ss&&ss.user)user=ss.user;});
+function showMenu(){hideAuth();$('#ui').classList.add('hide');$('#menu').classList.remove('hide');inMenu=true;$('#mCont').classList.toggle('hide',!hasSave());accUI();}
+let recovering=false;
+async function boot(){let s=null;if(sb){try{s=(await sb.auth.getSession()).data.session;}catch(e){}}user=s?s.user:null;accUI();
+  if(recovering||/type=recovery/.test(location.hash)){recovering=true;return showAuth('reset');}
+  if(user){await afterLogin();return;}
+  if(LS.get('vc-guest'))showMenu();else showAuth('1');}
 async function openRank(){$('#rank').classList.remove('hide');const L=$('#rankList');if(!sb){L.innerHTML='<p class="objp">Sem conexão com o servidor.</p>';return;}L.innerHTML='<p class="objp">Carregando…</p>';
   try{const {data,error}=await sb.from('ranking').select('user_id,city,pop,happiness,day,goals').order('pop',{ascending:false}).limit(20);if(error)throw error;
     L.innerHTML=data.length?data.map((r,i)=>`<div class="rk${user&&r.user_id===user.id?' me':''}"><span class="pos">${i+1}</span><span><b>${esc(r.city)}</b><small>Dia ${r.day} · ${r.goals} objetivos · ${r.happiness}% de felicidade</small></span><span class="num">${r.pop.toLocaleString('pt-BR')} moradores</span></div>`).join('')
       :'<p class="objp">Ninguém no ranking ainda. Entre na sua conta e jogue a campanha para ser o primeiro.</p>';}catch(e){L.innerHTML=`<p class="objp">${esc(trad(e))}</p>`;}}
 $('#bRank').onclick=openRank;$('#mRank').onclick=openRank;
+function confirmNew(btn,mode){if(hasSave()&&btn.dataset.arm!=='1'){btn.dataset.arm='1';const t=btn.dataset.t||(btn.dataset.t=btn.textContent);btn.textContent='Apagar a cidade atual e começar? Toque de novo';setTimeout(()=>{btn.dataset.arm='';btn.textContent=t;},3500);return;}
+  btn.dataset.arm='';if(btn.dataset.t)btn.textContent=btn.dataset.t;startGame(mode);}
+$('#mCamp').onclick=e=>confirmNew(e.currentTarget,'campaign');$('#mSand').onclick=e=>confirmNew(e.currentTarget,'sandbox');
 
 /* ---------- layout: panels sit below the real top-bar height ---------- */
 const topRO=new ResizeObserver(()=>{document.documentElement.style.setProperty('--topH',$('#top').getBoundingClientRect().height+'px');});topRO.observe($('#top'));
@@ -599,6 +712,8 @@ let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#bInstall').classList.remove('hide');$('#mInstall').classList.remove('hide');});
 async function doInstall(){if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice;}catch(e){}installEvt=null;$('#bInstall').classList.add('hide');$('#mInstall').classList.add('hide');}
 $('#bInstall').onclick=doInstall;$('#mInstall').onclick=doInstall;
-addEventListener('appinstalled',()=>toast('Porto Serena instalado!'));
+addEventListener('appinstalled',()=>toast('Vice City instalado!'));
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
+boot();
 }
