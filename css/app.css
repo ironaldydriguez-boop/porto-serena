@@ -453,3 +453,10 @@ kbd{background:rgba(255,255,255,.18)}
   .a-step.a-form{justify-content:flex-start;padding-top:70px}
   .a-back{top:calc(max(14px,env(safe-area-inset-top)) + 40px)}
 }
+/* tela firme: sem zoom da página, sem "escorregar"; só o mapa responde aos gestos */
+html,body{position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-text-size-adjust:100%}
+canvas#c{touch-action:none}
+button,a,.item,.mrow,.cat{touch-action:manipulation}
+#tray,.hud-res,#cats{touch-action:pan-x;overscroll-behavior:contain}
+.mcard,.modal .panel,#log,#info,#side,.rank,.rtree{touch-action:pan-y;overscroll-behavior:contain}
+input,select,textarea{font-size:16px}

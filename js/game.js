@@ -422,21 +422,40 @@ function toggleMusic(){try{if(!actx){actx=new (window.AudioContext||window.webki
 $('#bMusic').onclick=toggleMusic;
 
 /* ---------- input (mouse + touch) ---------- */
-let down=null,keys={},lastClick=0,touchMode=matchMedia('(pointer:coarse)').matches;const ptrs=new Map();let pinch=null;
+let down=null,keys={},lastClick=0,touchMode=matchMedia('(pointer:coarse)').matches;const ptrs=new Map();let pinch=null,drawing=false;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function setMouse(e){const rc=canvas.getBoundingClientRect();mouse.x=(e.clientX-rc.left)/rc.width*2-1;mouse.y=-((e.clientY-rc.top)/rc.height)*2+1;mx=e.clientX;my=e.clientY;}
 function pinchInfo(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};}
-canvas.addEventListener('pointerdown',e=>{canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);
-  if(ptrs.size===2){pinch=pinchInfo();if(down)down.moved=true;return;}if(ptrs.size>2)return;setMouse(e);down={b:e.button,x:e.clientX,y:e.clientY,moved:false,touch:touchMode};});
+const angDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+function camPan(dx,dy){const {f,r}=camVecs(),k=cam.dist*.0017;panBy(-dx*r.x*k+dy*f.x*k,-dx*r.z*k+dy*f.z*k);}
+canvas.addEventListener('pointerdown',e=>{canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+  if(ptrs.size===2){const p=pinchInfo();pinch={...p,d0:p.d,a0:p.ang,x0:p.cx,y0:p.cy,mode:null};if(drawing)cancelDraw();if(down)down.moved=true;return;}if(ptrs.size>2)return;
+  setMouse(e);down={b:e.button,x:e.clientX,y:e.clientY,moved:false,touch:touchMode};
+  if(tool==='road'&&e.button===0&&!inMenu&&!photo){const gp=groundPt();if(gp){down.road=true;down.startPt=snapPt(gp);down.before=roadPts.length;}}});
 canvas.addEventListener('pointermove',e=>{const pp=ptrs.get(e.pointerId);if(pp){pp.x=e.clientX;pp.y=e.clientY;}
-  if(ptrs.size===2&&pinch){const n=pinchInfo();cam.tdist=clamp(cam.tdist*pinch.d/Math.max(20,n.d),14,160);cam.tyaw-=(n.ang-pinch.ang);const {f,r}=camVecs(),k=cam.dist*.0017,dx=n.cx-pinch.cx,dy=n.cy-pinch.cy;panBy(-dx*r.x*k+dy*f.x*k,-dx*r.z*k+dy*f.z*k);pinch=n;return;}
+  if(ptrs.size===2&&pinch){const n=pinchInfo();
+    // gesto inteligente: decide uma única ação (zoom, girar ou mover) e mantém até soltar os dedos
+    if(!pinch.mode){const sc=Math.abs(Math.log(n.d/pinch.d0)),an=Math.abs(angDiff(n.ang,pinch.a0)),mv=Math.hypot(n.cx-pinch.x0,n.cy-pinch.y0);
+      if(sc>.07)pinch.mode='zoom';else if(an>.3)pinch.mode='rot';else if(mv>26)pinch.mode='pan';}
+    if(pinch.mode==='zoom')cam.tdist=clamp(cam.tdist*pinch.d/Math.max(20,n.d),14,160);
+    else if(pinch.mode==='rot')cam.tyaw-=angDiff(n.ang,pinch.ang);
+    else if(pinch.mode==='pan')camPan(n.cx-pinch.cx,n.cy-pinch.cy);
+    Object.assign(pinch,{d:n.d,ang:n.ang,cx:n.cx,cy:n.cy});return;}
   const dx=e.clientX-mx,dy=e.clientY-my;setMouse(e);
   if(!down)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>(down.touch?10:5))down.moved=true;if(!down.moved)return;
+  if(down.road&&tool==='road'){drawRoadMove();return;}
   if(down.b===2||inMenu){cam.tyaw-=dx*.006;cam.tpitch=clamp(cam.tpitch+dy*.004,.35,1.45);}
-  else if(down.b===1||(down.b===0&&(tool==='select'||tool==='demolish'||(down.touch&&tool!=='place')))){const {f,r}=camVecs(),k=cam.dist*.0017;panBy(-dx*r.x*k+dy*f.x*k,-dx*r.z*k+dy*f.z*k);}});
+  else if(down.b===1||(down.b===0&&(tool==='select'||tool==='demolish')))camPan(dx,dy);});
+/* desenhar rua arrastando: o dedo (ou mouse) traça a curva, a câmera fica parada */
+function drawRoadMove(){const gp=groundPt();if(!gp)return;
+  if(!drawing){drawing=true;const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-down.startPt.x,l.z-down.startPt.z)>1.5)roadPts.push(down.startPt);}
+  const l=roadPts[roadPts.length-1];if(Math.hypot(l.x-gp.x,l.z-gp.z)>3.2){roadPts.push({x:gp.x,z:gp.z});ctxKey='';}}
+function cancelDraw(){drawing=false;if(down&&down.road)roadPts.length=down.before;}
 function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;}
-canvas.addEventListener('pointercancel',e=>{endPtr(e);down=null;});
-canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;const d=down;down=null;if(d.moved||inMenu||photo)return;setMouse(e);const gp=groundPt();
+canvas.addEventListener('pointercancel',e=>{endPtr(e);if(drawing)cancelDraw();down=null;drawing=false;});
+canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;const d=down;down=null;
+  if(drawing){drawing=false;setMouse(e);const gp=groundPt();if(gp){const p=snapPt(gp),l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.2)roadPts.push(p);}if(roadPts.length>=2)finishRoad();return;}
+  if(d.moved||inMenu||photo)return;setMouse(e);const gp=groundPt();
   if(d.b===2){if(tool==='road'&&roadPts.length>=2)finishRoad();else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;setCatUI();}return;}
   if(d.b!==0)return;const now=performance.now(),dbl=now-lastClick<320;lastClick=now;
   if(tool==='place'&&gp)tryPlace(gp);
@@ -444,6 +463,11 @@ canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;con
   else if(tool==='demolish'){const b=pickB();if(b)demolish(b);else if(gp){const n=nearestRoad(gp.x,gp.z);if(n&&n.d<1.8){if(!sand())S.m+=Math.floor(n.r.len*.6);sfx('demolish');removeRoad(n.r);recompute();log('Rua removida.');hud();}}}
   else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}});
 canvas.addEventListener('wheel',e=>{e.preventDefault();cam.tdist=clamp(cam.tdist*(1+Math.sign(e.deltaY)*.12),14,160);},{passive:false});
+/* a página não dá zoom nem escorrega: os menus ficam parados */
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#tray,.hud-res,#cats,.mcard,.modal .panel,#log,#info,#side,.a-step,.rank,.rtree'))e.preventDefault();},{passive:false});
+document.addEventListener('touchend',e=>{if(!e.touches.length&&ptrs.size){ptrs.clear();pinch=null;}},{passive:true});
 let mx=0,my=0;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(inMenu)return;const k=e.code;
   if(k==='Escape'){if(photo)setPhoto(false);else if(!$$('.modal:not(.hide)').every(m=>m.id==='menu')){$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});}else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;select(null);setCatUI();}}
@@ -463,8 +487,8 @@ function previewFrame(){const tip=$('#tip');ctxBar();if(inMenu||photo){tip.class
     html=`<b>${d.n}</b><br>${sand()?'grátis':costTxt(d.cost)}${cov}${p.bad?`<br><span class="bad">${p.bad}</span>`:p.warn?`<br><span class="warn">${p.warn}</span>`:''}<br><small>Q/E gira · F alinha à rua · Esc sai</small>`;}
   else if(tool==='road'&&gp){const pts=[...roadPts,snapPt(gp)];if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev=null;}
     if(pts.length>=2){const {s,m}=roadCost(pts),bad=roadCheck(s);roadPrev=new THREE.Mesh(ribbon(s,1.4,.09,[bad?'#e06a5a':'#f4e3b0']),new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));scene.add(roadPrev);
-      html=`<b>Rua</b><br>${sand()?'grátis':m+' moedas'}${bad?`<br><span class="bad">${bad}</span>`:''}<br><small>Clique para curvar · Enter, duplo clique ou botão direito termina</small>`;}
-    else html='<b>Rua</b><br>Clique para começar. Encoste numa rua existente para conectar.';}
+      html=`<b>Rua</b><br>${sand()?'grátis':m+' moedas'}${bad?`<br><span class="bad">${bad}</span>`:''}<br><small>Arraste para desenhar · ou clique nos pontos e Enter para concluir</small>`;}
+    else html='<b>Rua</b><br>Arraste para desenhar a rua, ou clique ponto a ponto. Encoste numa rua existente para conectar.';}
   else if(tool==='select'&&!touchMode){const b=pickB();hoverRing.visible=!!b&&b!==sel;if(b){hoverRing.scale.setScalar(b.r+.6);hoverRing.position.x=b.x;hoverRing.position.z=b.z;canvas.style.cursor='pointer';}else canvas.style.cursor='';}
   if(tool!=='select')hoverRing.visible=false;
   if(tool==='demolish'){const b=pickB();html=b?`<b>Demolir ${B[b.t].n}</b><br>Devolve 50% do custo`:'<b>Demolir</b><br>Clique numa construção ou numa rua';}
@@ -501,7 +525,7 @@ function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?
   if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);
   ctx.innerHTML=k==='place'?`<button class="btn" data-x="rl">Girar ⟲</button><button class="btn" data-x="rr">Girar ⟳</button><button class="btn" data-x="al">Alinhar à rua</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road2'?`<button class="btn pri" data-x="ok">Concluir rua</button><button class="btn" data-x="undo">Desfazer ponto</button><button class="btn" data-x="no">Cancelar</button>`
-    :k==='road'?`<span class="objp" style="margin:0 6px">Toque para marcar os pontos da rua</span><button class="btn" data-x="no">Cancelar</button>`
+    :k==='road'?`<span class="objp" style="margin:0 6px">Arraste para desenhar a rua ou toque nos pontos</span><button class="btn" data-x="no">Cancelar</button>`
     :k==='dem'?`<span class="objp" style="margin:0 6px">Toque numa construção ou rua</span><button class="btn" data-x="no">Sair</button>`:'';}
 ctx.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;
   if(x==='rl'||x==='rr'){if(align&&B[placeT].cat!=='dec')setAlign(false);manualRot+=(x==='rl'?1:-1)*Math.PI/12;}
