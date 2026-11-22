@@ -271,3 +271,7 @@ body:has(#tray:not(.hide)) #ctx{bottom:calc(max(12px,env(safe-area-inset-bottom)
 }
 @media (max-width:700px) and (max-height:700px){.a-deck{height:130px;margin:10px 0}.a-card{--w:92px}.a-h1{font-size:34px}}
 @media (prefers-reduced-motion:reduce){#auth *,#auth::before{animation:none!important;transition-duration:.01s!important;transition-delay:0s!important}}
+
+/* iPhone instalado (barra de status translúcida): a altura útil fica menor que a tela; estende as camadas até o fundo */
+canvas#c,#auth,.modal{bottom:auto;height:calc(100% + env(safe-area-inset-top,0px))}
+html.authbg,html.authbg body{background:#f3f2ee}

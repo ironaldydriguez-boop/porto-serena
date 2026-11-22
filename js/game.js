@@ -21,8 +21,8 @@ const hemi=new THREE.HemisphereLight('#dff1ff','#7a6a4a',.55);scene.add(hemi);
 const sun=new THREE.DirectionalLight('#fff3dc',1);sun.castShadow=true;
 sun.shadow.mapSize.set(LOW?1024:2048,LOW?1024:2048);Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:300});sun.shadow.bias=-.0006;
 scene.add(sun);scene.add(sun.target);
-function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.fov=camera.aspect<1?56:40;camera.updateProjectionMatrix();}
-addEventListener('resize',resize);resize();
+function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=camera.aspect<1?56:40;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();try{new ResizeObserver(()=>resize()).observe(canvas);}catch(e){}
 
 /* ---------- voxel geometry ---------- */
 const FACES=[[[1,0,0],[[1,0,1],[1,0,0],[1,1,0],[1,1,1]]],[[-1,0,0],[[0,0,0],[0,0,1],[0,1,1],[0,1,0]]],[[0,1,0],[[0,1,1],[1,1,1],[1,1,0],[0,1,0]]],[[0,-1,0],[[0,0,0],[1,0,0],[1,0,1],[0,0,1]]],[[0,0,1],[[0,0,1],[1,0,1],[1,1,1],[0,1,1]]],[[0,0,-1],[[1,0,0],[0,0,0],[0,1,0],[1,1,0]]]];
@@ -424,7 +424,7 @@ $('#bMusic').onclick=toggleMusic;
 /* ---------- input (mouse + touch) ---------- */
 let down=null,keys={},lastClick=0,touchMode=matchMedia('(pointer:coarse)').matches;const ptrs=new Map();let pinch=null;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-function setMouse(e){mouse.x=e.clientX/innerWidth*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;mx=e.clientX;my=e.clientY;}
+function setMouse(e){const rc=canvas.getBoundingClientRect();mouse.x=(e.clientX-rc.left)/rc.width*2-1;mouse.y=-((e.clientY-rc.top)/rc.height)*2+1;mx=e.clientX;my=e.clientY;}
 function pinchInfo(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};}
 canvas.addEventListener('pointerdown',e=>{canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);
   if(ptrs.size===2){pinch=pinchInfo();if(down)down.moved=true;return;}if(ptrs.size>2)return;setMouse(e);down={b:e.button,x:e.clientX,y:e.clientY,moved:false,touch:touchMode};});
@@ -580,8 +580,9 @@ function reveal(el){if(!el)return;if(!el.dataset.split){el.innerHTML=el.innerHTM
   el.querySelectorAll('.w').forEach((w,i)=>{w.style.transitionDelay=(i*65)+'ms';});el.classList.remove('go');void el.offsetWidth;el.classList.add('go');}
 function playIntro(){const d=$('#aDeck');d.classList.remove('fan');reveal($('#aH1'));setTimeout(()=>d.classList.add('fan'),620);}
 function showAuth(step){if(photo)setPhoto(false);$('#menu').classList.add('hide');$('#ui').classList.add('hide');$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});inMenu=true;
-  AU.classList.remove('hide');if(!$('#aDeck').children.length)buildDeck();aStep='';AU.querySelectorAll('.a-step').forEach(s=>s.classList.remove('on'));goStep(step||'1');}
-function hideAuth(){AU.classList.add('hide');stopPoll();}
+  AU.classList.remove('hide');document.documentElement.classList.add('authbg');themeColor('#f3f2ee');if(!$('#aDeck').children.length)buildDeck();aStep='';AU.querySelectorAll('.a-step').forEach(s=>s.classList.remove('on'));goStep(step||'1');}
+function hideAuth(){AU.classList.add('hide');document.documentElement.classList.remove('authbg');themeColor('#151b3c');stopPoll();}
+function themeColor(c){const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c;}
 function goStep(s){const cur=AU.querySelector('.a-step.on'),nx=AU.querySelector(`.a-step[data-s="${s}"]`);if(!nx||cur===nx)return;const fwd=ORDER.indexOf(s)>=ORDER.indexOf(aStep||'1');
   if(cur){cur.classList.remove('on');cur.classList.add(fwd?'out-f':'out-b');setTimeout(()=>cur.classList.remove('out-f','out-b'),700);}
   nx.classList.remove('out-f','out-b');nx.classList.add(fwd?'in-f':'in-b');void nx.offsetWidth;nx.classList.remove('in-f','in-b');nx.classList.add('on');aStep=s;AU.dataset.step=s;
