@@ -1,5 +1,5 @@
 // Porto Serena service worker: app shell offline + cache de fontes; nunca guarda chamadas ao Supabase.
-const VERSION = 'ps-v1';
+const VERSION = 'ps-v2';
 const SHELL = ['/', '/index.html', '/css/app.css', '/js/game.js', '/config.js', '/vendor/three.min.js', '/vendor/supabase.js',
   '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });

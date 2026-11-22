@@ -511,7 +511,7 @@ ctx.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;
 const clouds=[];
 {const cm=new THREE.MeshLambertMaterial({color:'#ffffff',transparent:true,opacity:.92});
   for(let i=0;i<11;i++){const v=new Vox(),R=rng(i*97+3);const n=3+Math.floor(R()*4);for(let k=0;k<n;k++)v.box(k*2.6-n*1.3+R()*1.2,R()*1.4,R()*3-1.5,3+R()*3,1.6+R()*1.4,3+R()*2.5,'#ffffff');
-    const m=new THREE.Mesh(toGeo(v.b),cm);m.castShadow=true;m.position.set(rand(-160,160),rand(34,46),rand(-120,120));m.userData.v=rand(1.2,2.4);scene.add(m);clouds.push(m);}}
+    const m=new THREE.Mesh(toGeo(v.b),cm.clone());m.castShadow=true;m.position.set(rand(-160,160),rand(52,64),rand(-120,120));m.userData.v=rand(1.2,2.4);scene.add(m);clouds.push(m);}}
 const boats=[];
 for(let i=0;i<4;i++){const v=new Vox();v.box(0,-.45,0,1.6,.55,4.2,pick(['#3d74a8','#8e3b3b','#2f7a78','#e8b86b']));v.box(0,.1,0,1.8,.12,4.4,C.trim);v.box(0,.2,0,.12,3.4,.12,C.wood2);v.box(.08,.9,.4,.06,2.4,1.9,'#f6efe0');v.box(.08,.9,-.9,.06,1.6,.9,'#f6efe0');
   const m=new THREE.Mesh(toGeo(v.b),matBody);m.castShadow=true;scene.add(m);boats.push({m,a:i/4*6.28+rand(0,1),sp:rand(.012,.022)*(i%2?1:-1),off:rand(10,22)});}
@@ -533,7 +533,7 @@ const pops=[];
 function popIn(b){b.obj.scale.set(.9,.02,.9);pops.push({b,t:0});dust(b.x,b.z,b.r,B[b.t].cat==='dec'?4:12);}
 const easeBack=t=>1+2.2*Math.pow(t-1,3)+1.2*Math.pow(t-1,2);
 function updateFX(dt,sp){waterU.value+=dt;
-  for(const c of clouds){c.position.x+=c.userData.v*dt*(sp?1:.3);if(c.position.x>170)c.position.x=-170;}
+  for(const c of clouds){c.position.x+=c.userData.v*dt*(sp?1:.3);if(c.position.x>170)c.position.x=-170;const dc=c.position.distanceTo(camera.position);c.material.opacity=.92*clamp((dc-14)/26,0,1);c.visible=c.material.opacity>.02;}
   for(const b of boats){b.a+=b.sp*dt*(sp?1:.3);const r=shoreAt(b.a)+b.off;b.m.position.set(Math.cos(b.a)*r,Math.sin(T*1.3+b.a*5)*.12,Math.sin(b.a)*r);b.m.rotation.y=-b.a+(b.sp>0?Math.PI:0);b.m.rotation.z=Math.sin(T*.9+b.a)*.05;}
   for(const g of gulls){g.a+=g.sp*dt;g.m.position.set(Math.cos(g.a)*g.r,g.h+Math.sin(T+g.ph)*1.2,Math.sin(g.a)*g.r);g.m.rotation.y=-g.a;g.m.scale.y=1+Math.sin(T*7+g.ph)*.6;}
   for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.t+=dt/.5;const k=Math.min(1,p.t),e=easeBack(k);p.b.obj.scale.set(.9+.1*k,Math.max(.02,e),.9+.1*k);if(k>=1){p.b.obj.scale.set(1,1,1);pops.splice(i,1);}}
@@ -590,6 +590,9 @@ async function openRank(){$('#rank').classList.remove('hide');const L=$('#rankLi
     L.innerHTML=data.length?data.map((r,i)=>`<div class="rk${user&&r.user_id===user.id?' me':''}"><span class="pos">${i+1}</span><span><b>${esc(r.city)}</b><small>Dia ${r.day} · ${r.goals} objetivos · ${r.happiness}% de felicidade</small></span><span class="num">${r.pop.toLocaleString('pt-BR')} moradores</span></div>`).join('')
       :'<p class="objp">Ninguém no ranking ainda. Entre na sua conta e jogue a campanha para ser o primeiro.</p>';}catch(e){L.innerHTML=`<p class="objp">${esc(trad(e))}</p>`;}}
 $('#bRank').onclick=openRank;$('#mRank').onclick=openRank;
+
+/* ---------- layout: panels sit below the real top-bar height ---------- */
+const topRO=new ResizeObserver(()=>{document.documentElement.style.setProperty('--topH',$('#top').getBoundingClientRect().height+'px');});topRO.observe($('#top'));
 
 /* ---------- PWA ---------- */
 let installEvt=null;
