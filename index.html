@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Porto Serena</title>
+<meta name="description" content="Construa uma vila mediterrânea em voxel, peça por peça, sem grade.">
+<meta name="theme-color" content="#102a32">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Porto Serena">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<canvas id="c" tabindex="0"></canvas>
+<div id="tiltT" class="tilt hide"></div><div id="tiltB" class="tilt hide"></div>
+
+<div id="ui" class="hide">
+  <div id="top" class="panel">
+    <span class="brand">Porto Serena</span>
+    <span class="chip" title="Moedas"><i style="background:#f4c95d"></i><span id="rM">0</span><small>moedas</small><span class="rate" id="dM"></span></span>
+    <span class="chip" title="Madeira"><i style="background:#a8703f"></i><span id="rW">0</span><small>madeira</small></span>
+    <span class="chip" title="Comida"><i style="background:#8fd18a"></i><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
+    <span class="chip" title="Mercadorias"><i style="background:#c4b3dc"></i><span id="rG">0</span><small>mercadorias</small></span>
+    <span class="chip" title="População"><i style="background:#e9a9b2;border-radius:50%"></i><span id="rP">0</span><small>moradores</small></span>
+    <span class="chip" title="Felicidade média"><i style="background:#9cc7d8;border-radius:50%"></i><span id="rH">0%</span><small>felicidade</small></span>
+    <span class="sp"></span>
+    <button class="tbtn" id="bRes">Pesquisa <span id="rR"></span></button>
+    <span class="chip" id="clock">Dia 1 · 08:00</span>
+    <div class="speed" id="speed"><button data-s="0" aria-label="Pausar">II</button><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="3">3x</button></div>
+    <button class="tbtn" id="bAlign" title="Alinhar construções à rua (F)">Alinhar: sim</button>
+    <button class="tbtn" id="bMusic">Música</button>
+    <button class="tbtn" id="bPhoto">Foto</button>
+    <button class="tbtn" id="bRank">Ranking</button>
+    <button class="tbtn" id="bAcc">Entrar</button>
+    <button class="tbtn hide" id="bInstall">Instalar</button>
+    <button class="tbtn" id="bMenu">Menu</button>
+  </div>
+
+  <div id="side">
+    <div class="panel" id="objP"><h3 id="objH">Objetivo</h3><div class="obj"><span class="dot"></span><span id="objT"></span></div><div class="objp" id="objR"></div></div>
+    <div class="panel hide" id="req"><h3>Pedido de morador</h3><div id="reqT"></div><div class="objp" id="reqR"></div></div>
+    <div class="panel"><h3>Notícias da vila</h3><div id="log"></div></div>
+  </div>
+
+  <div id="info" class="panel hide"></div>
+
+  <div id="dock">
+    <div id="tray" class="panel hide"></div>
+    <div id="cats" class="panel"></div>
+  </div>
+</div>
+
+<div id="tip" class="panel hide"></div>
+<div id="toast" class="panel" style="opacity:0"></div>
+
+<div id="photo" class="panel hide">
+  <strong style="font-family:Fredoka">Modo foto</strong>
+  <button class="btn" data-f="none">Natural</button>
+  <button class="btn" data-f="gold">Dourado</button>
+  <button class="btn" data-f="blue">Noite azul</button>
+  <button class="btn" data-f="sepia">Sépia</button>
+  <label style="display:flex;gap:6px;align-items:center;font-weight:700">Hora <input type="range" id="pTime" min="0" max="24" step=".1" value="17"></label>
+  <button class="btn" id="pTilt">Miniatura: sim</button>
+  <button class="btn pri" id="pShot">Capturar</button>
+  <button class="btn" id="pExit">Sair</button>
+</div>
+
+<div id="menu" class="modal">
+  <div class="panel">
+    <h1>Porto Serena</h1>
+    <p>Uma vila à beira-mar construída peça por peça, sem grade e sem pressa.</p>
+    <button class="btn" id="mCont">Continuar</button>
+    <button class="btn pri" id="mCamp">Nova campanha</button>
+    <button class="btn" id="mSand">Modo sandbox</button>
+    <button class="btn" id="mRank">Ranking das cidades</button>
+    <button class="btn" id="mAcc">Entrar / salvar na nuvem</button>
+    <button class="btn hide" id="mInstall">Instalar no dispositivo</button>
+    <button class="btn" id="mHelp">Controles</button>
+    <div class="fine">Protótipo jogável · nome provisório</div>
+  </div>
+</div>
+
+<div id="help" class="modal hide"><div class="panel">
+  <h2>Controles</h2>
+  <div class="keys">
+    <kbd>WASD / setas</kbd><span>Mover a câmera (ou arrastar com o botão do meio / botão esquerdo no modo seleção)</span>
+    <kbd>Botão direito + arrastar</kbd><span>Girar a câmera</span>
+    <kbd>Roda do mouse</kbd><span>Zoom</span>
+    <kbd>Clique</kbd><span>Construir / selecionar</span>
+    <kbd>Q / E</kbd><span>Girar a peça livremente (15°). Segure Shift para 3°</span>
+    <kbd>F</kbd><span>Liga/desliga o alinhamento automático à rua</span>
+    <kbd>Rua</kbd><span>Clique para marcar pontos da curva. Enter, duplo clique ou botão direito termina</span>
+    <kbd>Esc</kbd><span>Cancelar ferramenta / fechar</span>
+    <kbd>Espaço · 1 2 3</kbd><span>Pausar · velocidades</span>
+    <kbd>P</kbd><span>Modo foto</span>
+    <kbd>B</kbd><span>Demolir</span>
+    <kbd>Toque: 1 dedo</kbd><span>Arrastar move a câmera · tocar constrói ou seleciona</span>
+    <kbd>Toque: 2 dedos</kbd><span>Pinçar dá zoom · girar os dedos gira a câmera</span>
+  </div>
+  <p style="color:var(--mute)">Para instalar como app: no Chrome/Edge use o botão Instalar; no iPhone, toque em Compartilhar e depois em “Adicionar à Tela de Início”.</p>
+  <p style="color:var(--mute)">Casas precisam ficar perto de uma rua. Moradores chegam quando a casa tem o que precisam: água, comida e, nas classes mais altas, mercado, capela, café e teatro. Decoração por perto aumenta a felicidade.</p>
+  <div class="btnrow"><button class="btn pri" data-close>Entendi</button></div>
+</div></div>
+
+<div id="research" class="modal hide"><div class="panel">
+  <h2>Árvore de pesquisa</h2>
+  <div class="objp">Escolha o que estudar. Pontos vêm da população e das escolas.</div>
+  <div class="rtree" id="rtree"></div>
+  <div class="btnrow"><button class="btn pri" data-close>Fechar</button></div>
+</div></div>
+
+<div id="shot" class="modal hide"><div class="panel">
+  <h2>Sua foto</h2>
+  <div class="objp">Clique com o botão direito na imagem e escolha “Salvar imagem como…”.</div>
+  <img id="shotImg" alt="Foto da vila">
+  <div class="btnrow"><button class="btn pri" data-close>Fechar</button></div>
+</div></div>
+
+<div id="win" class="modal hide"><div class="panel" style="max-width:460px;text-align:center">
+  <h1 style="color:var(--sun);font-size:40px">A vila virou cidade!</h1>
+  <p style="color:var(--mute)">Você concluiu a campanha. Continue construindo à vontade.</p>
+  <div class="btnrow" style="justify-content:center"><button class="btn pri" data-close>Continuar</button></div>
+</div></div>
+
+<div id="acc" class="modal hide"><div class="panel" style="max-width:440px">
+  <h2 id="accH">Sua conta</h2>
+  <div id="accOut">
+    <p class="objp">Entre para guardar a sua cidade na nuvem, jogar em outro aparelho e aparecer no ranking.</p>
+    <form id="accForm" class="form">
+      <label>E-mail<input id="accEmail" type="email" autocomplete="email" required></label>
+      <label>Senha<input id="accPass" type="password" autocomplete="current-password" minlength="6" required></label>
+      <div class="btnrow"><button class="btn pri" type="submit" data-act="in">Entrar</button><button class="btn" type="button" id="accUp">Criar conta</button></div>
+    </form>
+  </div>
+  <div id="accIn" class="hide">
+    <p class="objp" id="accWho"></p>
+    <label class="form">Nome da cidade<input id="accCity" maxlength="32" placeholder="Porto Serena"></label>
+    <div class="btnrow"><button class="btn pri" id="cSave">Salvar na nuvem</button><button class="btn" id="cLoad">Carregar da nuvem</button><button class="btn" id="accOutBtn">Sair</button></div>
+  </div>
+  <p class="objp" id="accMsg" role="status"></p>
+  <div class="btnrow"><button class="btn" data-close>Fechar</button></div>
+</div></div>
+
+<div id="rank" class="modal hide"><div class="panel" style="max-width:560px">
+  <h2>Ranking das cidades</h2>
+  <p class="objp">As maiores cidades da campanha, de todos os jogadores.</p>
+  <div id="rankList" class="rank"></div>
+  <div class="btnrow"><button class="btn pri" data-close>Fechar</button></div>
+</div></div>
+
+<script src="/vendor/three.min.js"></script>
+<script src="/vendor/supabase.js"></script>
+<script src="/config.js"></script>
+<script src="/js/game.js"></script>
+</body>
+</html>
