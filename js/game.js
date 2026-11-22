@@ -906,7 +906,7 @@ requestAnimationFrame(frame);
 addEventListener('beforeunload',save);
 
 /* ---------- context bar (touch-friendly actions) ---------- */
-const ctx=document.createElement('div');ctx.id='ctx';ctx.className='panel hide';document.body.appendChild(ctx);
+const ctx=document.createElement('div');ctx.id='ctx';ctx.className='panel hide';$('#app').appendChild(ctx);
 let ctxKey='';
 function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?(roadPts.length>=2?'road2':'road'):tool==='demolish'?'dem':'';
   if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);
@@ -1181,11 +1181,11 @@ function fitApp(){const st=navigator.standalone||matchMedia('(display-mode: stan
   // celular em pé: gira o jogo inteiro para a horizontal (o login continua em pé por causa do teclado)
   const was=ROT;ROT=isTouch&&port&&!authOn;D.classList.toggle('rot',ROT);
   if(ROT&&!was){D.classList.add('rotin');setTimeout(()=>D.classList.remove('rotin'),500);}
-  const full=st&&isTouch?(port?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width)):0;
+  const scr=port?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width),full=isTouch&&(st||ROT&&!navigator.userAgent.includes('CriOS')&&scr-innerHeight<70)?scr:0;
   const ph=Math.max(innerHeight,full||0),pw=innerWidth,big=!ROT&&ph>innerHeight;
   const aw=ROT?ph:pw,ah=ROT?pw:ph;
   D.style.setProperty('--appH',ROT||big?ah+'px':'100%');D.style.setProperty('--gap',big?(ph-innerHeight)+'px':'0px');
-  D.style.setProperty('--aw',aw+'px');D.style.setProperty('--ah',ah+'px');D.style.setProperty('--vw',aw/100+'px');D.style.setProperty('--vh',ah/100+'px');
+  D.style.setProperty('--ph',ph+'px');D.style.setProperty('--aw',aw+'px');D.style.setProperty('--ah',ah+'px');D.style.setProperty('--vw',aw/100+'px');D.style.setProperty('--vh',ah/100+'px');
   // as regras de layout seguem o tamanho do jogo (não o da tela física)
   const C={w1320:aw<=1320,w900:aw<=900,w700:aw<=700,w600:aw<=600,w430:aw<=430,w380:aw<=380,s700:aw<=700&&ah<=700,x1200:aw>=1200,lc:ah<=520&&aw>ah};
   for(const k in C)D.classList.toggle(k,C[k]);

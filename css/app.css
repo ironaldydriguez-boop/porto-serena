@@ -1,9 +1,11 @@
 :root{--sat:env(safe-area-inset-top);--sar:env(safe-area-inset-right);--sab:env(safe-area-inset-bottom);--sal:env(safe-area-inset-left)}
 /* Celular em pé: o jogo gira inteiro e fica sempre na horizontal (sem aviso) */
 html.rot{--sat:env(safe-area-inset-right);--sar:env(safe-area-inset-bottom);--sab:env(safe-area-inset-left);--sal:env(safe-area-inset-top)}
-html.rot body{position:fixed;top:0;left:0;width:var(--aw)!important;height:var(--ah)!important;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)}
+/* o body fica do tamanho da tela física (o iPhone instalado informa uma área menor) e só o #app gira */
+html.rot body{position:fixed;top:0;left:0;width:100%!important;height:var(--ph)!important;overflow:hidden}
+html.rot #app{position:absolute;top:0;left:0;width:var(--aw);height:var(--ah);transform-origin:0 0;transform:rotate(90deg) translateY(-100%);overflow:hidden}
 html.rot{height:100%!important}
-html.rotin body{animation:rotin .45s ease-out}
+html.rotin #app{animation:rotin .45s ease-out}
 @keyframes rotin{from{opacity:0}to{opacity:1}}
 /* VOICE: aconchegante, calmo, de brinquedo artesanal
    IDEA: uma maquete de vila mediterrânea montada peça por peça
