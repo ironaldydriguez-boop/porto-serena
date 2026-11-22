@@ -40,6 +40,8 @@
  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 4h11l-2 4 2 4H6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5L12 12l8-4.5M12 12v9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/></symbol>
  <symbol id="i-pad" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5" fill="none" stroke="#fff" stroke-width="1.9"/><path d="M7 11v3M5.5 12.5h3" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="11.5" r="1.2" fill="#fff"/><circle cx="18" cy="13.8" r="1.2" fill="#fff"/></symbol>
+ <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 2L5 13.5h6L10 22l9-12h-6.2z" fill="var(--c,currentColor)"/></symbol>
+ <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2.5C9 7 6 10.3 6 14a6 6 0 0 0 12 0c0-3.7-3-7-6-11.5z" fill="var(--c,currentColor)"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5" stroke="rgba(255,255,255,.7)" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
  <symbol id="i-rotate" viewBox="0 0 64 64"><rect x="22" y="8" width="20" height="36" rx="5" fill="none" stroke="#fff" stroke-width="3"/><path d="M14 50a22 22 0 0 0 36 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M46 46l4 4-5 3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
@@ -55,6 +57,8 @@
       <span class="chip" title="Madeira"><svg class="ic" style="--c:#e0a66e"><use href="#i-wood"/></svg><span id="rW">0</span><small>madeira</small></span>
       <span class="chip" title="Comida"><svg class="ic" style="--c:#a6e39b"><use href="#i-food"/></svg><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
       <span class="chip" title="Mercadorias"><svg class="ic" style="--c:#d6c6f2"><use href="#i-box"/></svg><span id="rG">0</span><small>mercadorias</small></span>
+      <span class="chip" title="Energia (produção/consumo)"><svg class="ic" style="--c:#ffd84d"><use href="#i-bolt"/></svg><span id="rE">0</span><small>MW</small></span>
+      <span class="chip" title="Água encanada (produção/consumo)"><svg class="ic" style="--c:#7fd0ff"><use href="#i-drop"/></svg><span id="rA">0</span><small>água</small></span>
       <span class="chip" title="Moradores"><svg class="ic" style="--c:#ffb7c2"><use href="#i-people"/></svg><span id="rP">0</span><small>moradores</small></span>
       <span class="chip" title="Felicidade média"><svg class="ic" style="--c:#9fd8f0"><use href="#i-smile"/></svg><span id="rH">0%</span><small>felicidade</small></span>
     </div>
@@ -73,7 +77,7 @@
   </div>
 
   <div id="side">
-    <div class="panel" id="objP"><h3 id="objH">Objetivo</h3><div class="obj"><span class="dot"></span><span id="objT"></span></div><div class="objp" id="objR"></div></div>
+    <div class="panel" id="objP"><h3 id="objH">Missão</h3><div class="obj"><span class="dot"></span><span id="objT"></span></div><div class="mbar"><div class="mtrack"><div id="objBar"></div></div><span id="objN"></span></div><div class="objp" id="objR"></div></div>
     <div class="panel hide" id="req"><h3>Pedido de morador</h3><div id="reqT"></div><div class="objp" id="reqR"></div></div>
     <div class="panel"><h3>Notícias da vila</h3><div id="log"></div></div>
   </div>
@@ -149,6 +153,23 @@
 </section>
 
 <div id="handoff" class="panel hide" role="status"><span>Sua cidade foi atualizada pelo seu outro aparelho. O jogo pausou aqui.</span><button class="btn pri" id="hoTake">Continuar aqui</button></div>
+
+<div id="hl" class="hide" aria-hidden="true"></div>
+<div id="guide" class="hide" role="dialog" aria-label="Tutorial">
+  <svg class="lia" viewBox="0 0 120 150" aria-hidden="true">
+    <ellipse cx="60" cy="146" rx="34" ry="4" fill="rgba(0,0,0,.18)"/>
+    <path d="M24 150c0-30 14-48 36-48s36 18 36 48z" fill="#1f8a8a"/><path d="M30 128h60v7H30z" fill="#ff9a3c"/><path d="M57 104h6v44h-6z" fill="#167070"/>
+    <rect x="70" y="112" width="30" height="22" rx="4" fill="#dff3ff" stroke="#2b3a46" stroke-width="3" transform="rotate(-12 85 123)"/><path d="M76 122l6 4 8-9" stroke="#1f8a8a" stroke-width="3" fill="none" stroke-linecap="round" transform="rotate(-12 85 123)"/>
+    <circle cx="36" cy="60" r="14" fill="#2b1d14"/><circle cx="84" cy="60" r="14" fill="#2b1d14"/><circle cx="40" cy="78" r="11" fill="#2b1d14"/><circle cx="80" cy="78" r="11" fill="#2b1d14"/>
+    <rect x="54" y="88" width="12" height="16" rx="5" fill="#c68a62"/>
+    <circle cx="60" cy="66" r="27" fill="#d9a074"/>
+    <g class="eyes"><ellipse cx="50" cy="66" rx="3.6" ry="4.6" fill="#2b1d14"/><ellipse cx="70" cy="66" rx="3.6" ry="4.6" fill="#2b1d14"/></g>
+    <circle cx="44" cy="76" r="4.5" fill="#f08a7a" opacity=".55"/><circle cx="76" cy="76" r="4.5" fill="#f08a7a" opacity=".55"/>
+    <path d="M51 79c5 5 13 5 18 0" stroke="#7a3b22" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M30 56c0-19 13-30 30-30s30 11 30 30z" fill="#f6c431"/><path d="M24 55h72a4 4 0 0 1 0 8H24a4 4 0 0 1 0-8z" fill="#e8ad17"/><path d="M57 26h6v29h-6z" fill="#fff3bf" opacity=".8"/>
+  </svg>
+  <div class="gbub glass"><div class="ghead"><b>Lia</b><span id="gStep"></span></div><p id="gText"></p><div class="gbtns"><button class="btn pri hide" id="gNext"></button><button class="btn" id="gSkip">Pular tutorial</button></div></div>
+</div>
 <div id="tip" class="panel hide"></div>
 <div id="toast" class="panel" style="opacity:0"></div>
 

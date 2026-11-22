@@ -460,3 +460,26 @@ button,a,.item,.mrow,.cat{touch-action:manipulation}
 #tray,.hud-res,#cats{touch-action:pan-x;overscroll-behavior:contain}
 .mcard,.modal .panel,#log,#info,#side,.rank,.rtree{touch-action:pan-y;overscroll-behavior:contain}
 input,select,textarea{font-size:16px}
+
+/* ===== missões, energia/água, tutorial ===== */
+.chip.low{background:rgba(255,69,58,.38);border-color:rgba(255,120,110,.6)}
+.mbar{display:flex;align-items:center;gap:8px;margin-top:8px}.mtrack{flex:1;height:7px;border-radius:9px;background:rgba(255,255,255,.18);overflow:hidden}
+#objBar{height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#7ee08f,#ffd36b);transition:width .6s cubic-bezier(.2,.8,.2,1)}#objN{font-size:12px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
+#hl{position:fixed;z-index:15;border-radius:20px;pointer-events:none;box-shadow:0 0 0 3px #ffd84d,0 0 0 9999px rgba(0,0,0,.0),0 0 24px 6px rgba(255,216,77,.6);animation:hlPulse 1.3s ease-in-out infinite;transition:left .25s,top .25s,width .25s,height .25s}
+@keyframes hlPulse{50%{box-shadow:0 0 0 6px rgba(255,216,77,.55),0 0 34px 12px rgba(255,216,77,.35)}}
+#guide{position:fixed;z-index:14;left:max(10px,env(safe-area-inset-left));top:calc(var(--topH,60px) + 18px);display:flex;align-items:flex-start;gap:6px;max-width:min(460px,calc(100vw - 20px));pointer-events:none}
+#guide>*{pointer-events:auto}
+.lia{width:104px;height:130px;flex:none;filter:drop-shadow(0 10px 14px rgba(0,0,0,.3));animation:liaBob 3.2s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes liaBob{50%{transform:translateY(-4px) rotate(-1.5deg)}}
+.lia .eyes{animation:blink 4.2s infinite;transform-origin:60px 66px}@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.gbub{padding:12px 14px;border-radius:6px 20px 20px 20px;margin-top:22px}
+.gbub p{margin:4px 0 10px;font-size:15px;line-height:1.4}.ghead{display:flex;justify-content:space-between;gap:10px;font-size:14px}.ghead span{color:var(--mute);font-size:12px}
+.gbtns{display:flex;gap:6px;flex-wrap:wrap}.gbtns .btn{height:36px;padding:0 14px;font-size:14px}
+#guide.pop .gbub{animation:popIn .5s var(--spring)}#guide.pop .lia{animation:liaIn .6s var(--spring),liaBob 3.2s ease-in-out .6s infinite}
+@keyframes liaIn{from{transform:translateY(40px) scale(.8);opacity:0}}
+@media (max-height:520px) and (orientation:landscape){#guide{top:calc(var(--topH,44px) + 10px);max-width:min(430px,58vw)}.lia{width:62px;height:78px}.gbub{margin-top:14px;padding:9px 11px}.gbub p{font-size:13px;margin:2px 0 7px}.gbtns .btn{height:30px;font-size:12.5px}}
+
+/* doca: categorias sempre numa linha (rola de lado); barra de ações acima da altura real da doca */
+#cats{flex-wrap:nowrap!important;overflow-x:auto;max-width:100%;justify-content:flex-start;scrollbar-width:none}#cats::-webkit-scrollbar{display:none}.cat{flex:none}
+#ctx,body:has(#tray:not(.hide)) #ctx{bottom:calc(max(12px,env(safe-area-inset-bottom)) - var(--gap,0px) + var(--dockH,70px) + 8px)!important}
+@media (max-width:1320px){.chip small{display:none}}
