@@ -428,6 +428,16 @@ function setMouse(e){const rc=canvas.getBoundingClientRect();mouse.x=(e.clientX-
 function pinchInfo(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};}
 const angDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 function camPan(dx,dy){const {f,r}=camVecs(),k=cam.dist*.0017;panBy(-dx*r.x*k+dy*f.x*k,-dx*r.z*k+dy*f.z*k);}
+/* câmera ancorada: o ponto da cidade sob o dedo (ou cursor) continua sob o dedo ao dar zoom, girar ou arrastar */
+const tcam=new THREE.PerspectiveCamera(),tray=new THREE.Raycaster();
+const tgt=()=>({x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist});
+function groundAt(sx,sy,p){const rc=canvas.getBoundingClientRect();Object.assign(tcam,{fov:camera.fov,aspect:camera.aspect,near:camera.near,far:camera.far});tcam.updateProjectionMatrix();
+  const cp=Math.cos(p.pitch);tcam.position.set(p.x+Math.sin(p.yaw)*cp*p.dist,Math.sin(p.pitch)*p.dist,p.z+Math.cos(p.yaw)*cp*p.dist);tcam.lookAt(p.x,0,p.z);tcam.updateMatrixWorld();
+  tray.setFromCamera(new THREE.Vector2((sx-rc.left)/rc.width*2-1,-((sy-rc.top)/rc.height)*2+1),tcam);const o=new THREE.Vector3();
+  if(!tray.ray.intersectPlane(plane,o))return null;return Math.hypot(o.x-p.x,o.z-p.z)>220?null:o;}
+function snapCam(){cam.x=cam.tx;cam.z=cam.tz;cam.yaw=cam.tyaw;cam.pitch=cam.tpitch;cam.dist=cam.tdist;}
+function anchored(ox,oy,nx,ny,change){const P=groundAt(ox,oy,tgt());change();const Q=groundAt(nx,ny,tgt());
+  if(P&&Q){cam.tx=clamp(cam.tx+P.x-Q.x,-85,85);cam.tz=clamp(cam.tz+P.z-Q.z,-85,85);}snapCam();}
 canvas.addEventListener('pointerdown',e=>{canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});try{canvas.setPointerCapture(e.pointerId);}catch(_){}
   if(ptrs.size===2){const p=pinchInfo();pinch={...p,d0:p.d,a0:p.ang,x0:p.cx,y0:p.cy,mode:null};if(drawing)cancelDraw();if(down)down.moved=true;return;}if(ptrs.size>2)return;
   setMouse(e);down={b:e.button,x:e.clientX,y:e.clientY,moved:false,touch:touchMode};
@@ -436,16 +446,15 @@ canvas.addEventListener('pointermove',e=>{const pp=ptrs.get(e.pointerId);if(pp){
   if(ptrs.size===2&&pinch){const n=pinchInfo();
     // gesto inteligente: decide uma única ação (zoom, girar ou mover) e mantém até soltar os dedos
     if(!pinch.mode){const sc=Math.abs(Math.log(n.d/pinch.d0)),an=Math.abs(angDiff(n.ang,pinch.a0)),mv=Math.hypot(n.cx-pinch.x0,n.cy-pinch.y0);
-      if(sc>.07)pinch.mode='zoom';else if(an>.3)pinch.mode='rot';else if(mv>26)pinch.mode='pan';}
-    if(pinch.mode==='zoom')cam.tdist=clamp(cam.tdist*pinch.d/Math.max(20,n.d),14,160);
-    else if(pinch.mode==='rot')cam.tyaw-=angDiff(n.ang,pinch.ang);
-    else if(pinch.mode==='pan')camPan(n.cx-pinch.cx,n.cy-pinch.cy);
+      if(an>.32&&sc<.06)pinch.mode='rot';else if(sc>.05||mv>14)pinch.mode='zoom';}
+    if(pinch.mode==='zoom'){const f=Math.max(24,pinch.d)/Math.max(24,n.d);anchored(pinch.cx,pinch.cy,n.cx,n.cy,()=>{cam.tdist=clamp(cam.tdist*f,14,160);});}
+    else if(pinch.mode==='rot'){const da=angDiff(n.ang,pinch.ang);anchored(pinch.cx,pinch.cy,n.cx,n.cy,()=>{cam.tyaw-=da;});}
     Object.assign(pinch,{d:n.d,ang:n.ang,cx:n.cx,cy:n.cy});return;}
   const dx=e.clientX-mx,dy=e.clientY-my;setMouse(e);
   if(!down)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>(down.touch?10:5))down.moved=true;if(!down.moved)return;
   if(down.road&&tool==='road'){drawRoadMove();return;}
   if(down.b===2||inMenu){cam.tyaw-=dx*.006;cam.tpitch=clamp(cam.tpitch+dy*.004,.35,1.45);}
-  else if(down.b===1||(down.b===0&&(tool==='select'||tool==='demolish')))camPan(dx,dy);});
+  else if(down.b===1||(down.b===0&&(tool==='select'||tool==='demolish')))anchored(e.clientX-dx,e.clientY-dy,e.clientX,e.clientY,()=>{});});
 /* desenhar rua arrastando: o dedo (ou mouse) traça a curva, a câmera fica parada */
 function drawRoadMove(){const gp=groundPt();if(!gp)return;
   if(!drawing){drawing=true;const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-down.startPt.x,l.z-down.startPt.z)>1.5)roadPts.push(down.startPt);}
@@ -462,7 +471,7 @@ canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;con
   else if(tool==='road'&&gp){if(dbl&&roadPts.length>=2&&!d.touch){finishRoad();return;}const p=snapPt(gp);const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.5){roadPts.push(p);sfx('tick');}}
   else if(tool==='demolish'){const b=pickB();if(b)demolish(b);else if(gp){const n=nearestRoad(gp.x,gp.z);if(n&&n.d<1.8){if(!sand())S.m+=Math.floor(n.r.len*.6);sfx('demolish');removeRoad(n.r);recompute();log('Rua removida.');hud();}}}
   else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}});
-canvas.addEventListener('wheel',e=>{e.preventDefault();cam.tdist=clamp(cam.tdist*(1+Math.sign(e.deltaY)*.12),14,160);},{passive:false});
+canvas.addEventListener('wheel',e=>{e.preventDefault();const dy=e.deltaMode===1?e.deltaY*16:e.deltaY,f=Math.exp(clamp(dy,-120,120)*.0018);anchored(e.clientX,e.clientY,e.clientX,e.clientY,()=>{cam.tdist=clamp(cam.tdist*f,14,160);});},{passive:false});
 /* a página não dá zoom nem escorrega: os menus ficam parados */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
