@@ -1074,7 +1074,7 @@ function setCatUI(){$$('.cat').forEach(b=>b.classList.toggle('on',b.dataset.c===
 $('#cats').addEventListener('click',e=>{const b=e.target.closest('.cat');if(!b)return;const c=b.dataset.c;
   if(c==='rua'){setTool(tool==='road'?'select':'road');openCat=null;}else if(c==='dem'){setTool(tool==='demolish'?'select':'demolish');openCat=null;}else{openCat=openCat===c?null:c;if(tool!=='place')setTool('select');}setCatUI();});
 $('#tray').addEventListener('click',e=>{if(e.target.closest('.trayx')){openCat=null;if(tool==='place')setTool('select');setCatUI();return;}const b=e.target.closest('.item');if(!b)return;const t=b.dataset.t;placeT=t;openCat=null;setTool('place');setCatUI();canvas.focus();});
-let ghost=null,movingPlot=null;
+let ghost=null,movingPlot=null,pendingPlot=null;
 const plotGrid=new THREE.GridHelper(28,14,0xffdea0,0xffdea0);
 plotGrid.position.y=.024;plotGrid.material.transparent=true;plotGrid.material.opacity=.33;
 plotGrid.visible=false;scene.add(plotGrid);
@@ -1113,8 +1113,9 @@ function movePlot(b,gp){
 const hoverRing=new THREE.Mesh(new THREE.RingGeometry(.88,1,48),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.45,depthWrite:false}));hoverRing.rotation.x=-Math.PI/2;hoverRing.position.y=.13;hoverRing.visible=false;scene.add(hoverRing);const ring=new THREE.Mesh(new THREE.RingGeometry(.92,1,72),new THREE.MeshBasicMaterial({color:'#ffe08a',transparent:true,opacity:.55,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.12;ring.visible=false;scene.add(ring);
 const selRing=new THREE.Mesh(new THREE.RingGeometry(.85,1,48),new THREE.MeshBasicMaterial({color:'#f4c95d',transparent:true,opacity:.9,depthWrite:false}));selRing.rotation.x=-Math.PI/2;selRing.position.y=.14;selRing.visible=false;scene.add(selRing);
 let roadPrev=null;
-function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}tool=t;movingPlot=null;dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
-  if(t==='place'){ghost=createPlotGhost(placeT);manualRot=0;}
+function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}else if(tool==='place')down=null;
+  tool=t;movingPlot=null;pendingPlot=null;dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
+  if(t==='place'){ghost=createPlotGhost(placeT);ghost.visible=false;manualRot=0;}
   if(t!=='place')placeT=null;$('#tip').classList.add('hide');setCatUI();}
 function plotError(t,x,z,a,existing){
   const d=B[t],radius=existing?.r??d.r,ld=landDist(x,z);
@@ -1165,8 +1166,19 @@ function placement(t,gp,existing=null){
   }
   return{x,z,a,bad,warn};
 }
-function tryPlace(gp){const t=placeT,p=placement(t,gp);if(p.bad){toast(p.bad);return;}pay(B[t].cost);const b=addBuilding({t,x:p.x,z:p.z,a:p.a,anim:true});gainXP(Math.max(1,Math.round((B[t].cost.m||0)/25)));sfx(B[t].cat==='dec'?'pop':'build');
-  checkReqDone(b);recompute();hud();}
+function confirmPlacement(){
+  if(tool!=='place'||!pendingPlot||ptrs.size||inMenu||photo)return;
+  const t=placeT,p=placement(t,pendingPlot);
+  if(p.bad){updatePlacementControls(p);return;}
+  // Consume the pending lot once. A second tap requires choosing another location.
+  pendingPlot=null;ghost.visible=false;plotGrid.visible=false;ring.visible=false;
+  updatePlacementControls(null);
+  pay(B[t].cost);
+  const b=addBuilding({t,x:p.x,z:p.z,a:p.a,anim:true});
+  gainXP(Math.max(1,Math.round((B[t].cost.m||0)/25)));
+  sfx(B[t].cat==='dec'?'pop':'build');
+  checkReqDone(b);recompute();hud();save();
+}
 function roadCost(pts){const s=sampleCurve(pts);return{s,m:Math.ceil(s.length*1.2+s.filter(p=>p.w).length*6)};}
 function overlapsRoad(samples){
   const box=roadBBox(samples);
@@ -1541,7 +1553,12 @@ canvas.addEventListener('pointerdown',e=>{
   if(e.button!==0||inMenu||photo)return;
   const gp=groundPt();
   if(!gp)return;
-  if(tool==='place')down.plot=true;
+  if(tool==='place'){
+    down.plot=true;
+    if(pendingPlot&&ghost?.visible&&dist(gp,ghost.position)<=B[placeT].r+.35){
+      down.plotOffset={x:pendingPlot.x-gp.x,z:pendingPlot.z-gp.z};
+    }
+  }
   if(tool==='move'&&movingPlot&&pickB()===movingPlot){
     down.building=movingPlot;
     down.offset={x:movingPlot.x-gp.x,z:movingPlot.z-gp.z};
@@ -1620,12 +1637,14 @@ function finishPointer(e,commit){
     return;
   }
   if(inMenu||photo)return;
-  if(d.plot&&tool==='place'){if(gp)tryPlace(gp);return;}
+  if(d.plot&&tool==='place'){
+    if(gp)pendingPlot=placementAim(gp,d.plotOffset);
+    return;
+  }
   if(d.moved)return;
   if(d.b===2){if(tool==='road'&&roadPts.length>=2)finishRoad();else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;setCatUI();}return;}
   if(d.b!==0)return;const now=performance.now(),dbl=now-lastClick<320;lastClick=now;
-  if(tool==='place'&&gp)tryPlace(gp);
-  else if(tool==='road'&&gp){if(dbl&&roadPts.length>=2&&!d.touch){finishRoad();return;}const p=snapPt(gp);const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.5){roadPts.push(p);sfx('tick');}}
+  if(tool==='road'&&gp){if(dbl&&roadPts.length>=2&&!d.touch){finishRoad();return;}const p=snapPt(gp);const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.5){roadPts.push(p);sfx('tick');}}
   else if(tool==='demolish'){const b=pickB();if(b)demolish(b);else if(gp){const n=nearestRoad(gp.x,gp.z);if(n&&n.d<1.8){if(!sand())S.m+=Math.floor(n.r.len*.6);sfx('demolish');removeRoad(n.r);recompute();log('Rua removida.');hud();}}}
   else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}
 }
@@ -1656,13 +1675,24 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]
   if(k==='Enter'&&tool==='road')finishRoad();if(k==='KeyH')$('#help').classList.remove('hide');});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 
+function placementAim(point,offset){
+  if(!point||!offset)return point;
+  return {x:point.x+offset.x,z:point.z+offset.z};
+}
 /* ---------- per-frame tool preview ---------- */
 let roadPreviewKey='';
 function previewFrame(){const tip=$('#tip');ctxBar();plotGrid.visible=false;if(inMenu||photo){tip.classList.add('hide');return;}const gp=groundPt();let html='';
-  if((tool==='place'||movingPlot)&&ghost&&gp){
-    const t=movingPlot?.t??placeT;
-    const aim=movingPlot&&down?.offset?{x:gp.x+down.offset.x,z:gp.z+down.offset.z}:gp;
-    const p=placement(t,aim,movingPlot),d=B[t];
+  const placing=tool==='place';
+  const aim=placing?(down?.plot?placementAim(gp,down.plotOffset):pendingPlot??(touchMode?null:gp)):
+    movingPlot?placementAim(gp,down?.offset):null;
+  const p=aim&&(placing||movingPlot)?placement(movingPlot?.t??placeT,aim,movingPlot):null;
+  if(placing){
+    ghost.visible=!!p;
+    if(!p)ring.visible=false;
+    updatePlacementControls(p);
+  }
+  if(ghost&&p){
+    const t=movingPlot?.t??placeT,d=B[t];
     plotGrid.position.set(p.x,.024,p.z);plotGrid.visible=!d.coast;
     ghost.position.set(p.x,0,p.z);ghost.rotation.y=p.a;ghostMat.emissive.set(p.bad?'#8b1e1e':p.warn?'#7a5c10':'#1f6b33');
     ring.visible=!!d.rad;if(d.rad){ring.scale.setScalar(d.rad);ring.position.x=p.x;ring.position.z=p.z;}
@@ -1940,13 +1970,23 @@ addEventListener('beforeunload',save);
 const ctx=document.createElement('div');ctx.id='ctx';ctx.className='panel hide';$('#app').appendChild(ctx);
 let ctxKey='';
 function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?(roadPts.length>=2?'road2':'road'):tool==='demolish'?'dem':tool==='move'?'move':'';
-  if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);
-  ctx.innerHTML=k==='place'?`<button class="btn" data-x="rl">Girar ⟲</button><button class="btn" data-x="rr">Girar ⟳</button><button class="btn" data-x="al">Alinhar à rua</button><button class="btn" data-x="no">Cancelar</button>`
+  if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);ctx.classList.toggle('placement-controls',k==='place');
+  ctx.innerHTML=k==='place'?`<span id="placeStatus" role="status">Arraste a prévia até o local.</span><button class="btn pri" data-x="build" disabled>Construir</button><button class="btn" data-x="rl">Girar ⟲</button><button class="btn" data-x="rr">Girar ⟳</button><button class="btn" data-x="al">Alinhar à rua</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road2'?`<button class="btn pri" data-x="ok">Concluir rua</button><button class="btn" data-x="undo">Desfazer ponto</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road'?`<span class="objp" style="margin:0 6px">Arraste para desenhar a rua ou toque nos pontos</span><button class="btn" data-x="no">Cancelar</button>`
     :k==='dem'?`<span class="objp" style="margin:0 6px">Toque numa construção ou rua</span><button class="btn" data-x="no">Sair</button>`
     :k==='move'?`<span class="objp" style="margin:0 6px">Arraste a construção e solte no novo lote.</span><button class="btn" data-x="no">Cancelar</button>`:'';}
-ctx.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;
+function updatePlacementControls(p){
+  const button=ctx.querySelector('[data-x="build"]'),status=ctx.querySelector('#placeStatus');
+  if(!button||!status)return;
+  const ready=!!pendingPlot&&!ptrs.size&&!!p&&!p.bad;
+  button.disabled=!ready;
+  const message=down?.plot?'Solte para marcar o local.':!pendingPlot?'Arraste a prévia até o local.':
+    p?.bad||p?.warn||'Confira o local e toque em Construir.';
+  if(status.textContent!==message)status.textContent=message;
+}
+ctx.addEventListener('click',e=>{const x=e.target.closest('[data-x]')?.dataset.x;if(!x)return;
+  if(x==='build'){confirmPlacement();return;}
   if(x==='rl'||x==='rr'){if(align&&B[placeT].cat!=='dec')setAlign(false);manualRot+=(x==='rl'?1:-1)*TURN;}
   if(x==='al')setAlign(!align);if(x==='ok')finishRoad();if(x==='undo'){roadPts.pop();ctxKey='';}
   if(x==='no'){setTool('select');openCat=null;setCatUI();}});
@@ -2248,7 +2288,7 @@ const TUT=[
     w:()=>({x:RT.b.x,z:RT.b.z,y:0,r:3}),ok:()=>roads.length>tb().roads&&roads.slice(tb().roads).some(r=>r.s.some(q=>Math.hypot(q.x-RT.b.x,q.z-RT.b.z)<7))},
   {t:'Bom trabalho! Agora vamos construir casas. Abra Moradia.',el:'[data-c=mor]',enter:()=>{tb().casa=count('casa');setTool('select');},ok:()=>openCat==='mor'},
   {t:'Escolha a Casinha.',el:'.item[data-t=casa]',ok:()=>placeT==='casa'},
-  {t:'Toque ao lado da rua nova para construir. A casa se vira para a calçada sozinha.',w:()=>({x:30,z:-43,y:0,r:3}),ok:()=>count('casa')>tb().casa},
+  {t:'Arraste a prévia da casa até a rua nova, solte e toque em Construir.',w:()=>({x:30,z:-43,y:0,r:3}),ok:()=>count('casa')>tb().casa},
   {t:'Moradores pagam impostos à Prefeitura. Toque na moeda sobre ela para coletar.',enter:()=>{setTool('select');openCat=null;setCatUI();S.bank=Math.max(S.bank,180);tb().tax=S.taxed||0;const p=firstOf('prefeitura');if(p)flyCam(p.x,p.z+6,58,.85);},
     el:'.bb.t',ok:()=>(S.taxed||0)>tb().tax},
   {t:'Para crescer, a cidade precisa de materiais. Toque na Fábrica.',enter:()=>{const f=firstOf('fabrica');if(f)flyCam(f.x,f.z+4,48,.85);},w:()=>{const f=firstOf('fabrica');return f&&{x:f.x,z:f.z,y:3,r:4};},ok:()=>sel&&sel.t==='fabrica'},
