@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=16">
+<link rel="stylesheet" href="/css/app.css?v=17">
 </head>
 <body>
 <div id="app">
@@ -94,6 +94,7 @@
     <button class="tbtn on" id="bAlign"><svg class="ic"><use href="#i-magnet"/></svg><span class="lb">Alinhar à rua</span></button>
     <button class="tbtn" id="bMusic"><svg class="ic"><use href="#i-music"/></svg><span class="lb">Música</span></button>
     <button class="tbtn" id="visitCity"><svg class="ic"><use href="#i-flag"/></svg><span class="lb">Visitar próximo local</span></button>
+    <button class="tbtn" id="bQuality"><svg class="ic"><use href="#i-gear"/></svg><span class="lb" id="graphicsMode">Gráficos automáticos</span></button>
     <button class="tbtn" id="bPhoto"><svg class="ic"><use href="#i-camera"/></svg><span class="lb">Modo foto</span></button>
     <button class="tbtn" id="bRank"><svg class="ic"><use href="#i-trophy"/></svg><span class="lb">Ranking</span></button>
     <button class="tbtn" id="bAcc"><svg class="ic"><use href="#i-user"/></svg><span class="lb" id="bAccL">Entrar</span></button>
@@ -216,15 +217,17 @@
   <button class="btn" data-f="sepia">Sépia</button>
   <label style="display:flex;gap:6px;align-items:center;font-weight:700">Hora <input type="range" id="pTime" min="0" max="24" step=".1" value="17"></label>
   <button class="btn" id="pTilt">Miniatura: sim</button>
-  <button class="btn pri" id="pShot">Capturar</button>
+  <button class="btn pri" id="pShot">Capturar em 4K</button>
   <button class="btn" id="pExit">Sair</button>
 </div>
 
 <div id="menu" class="modal hide">
-  <div class="mcard glass">
-    <img src="/icons/logo.png" alt="" class="menulogo">
-    <h1>Vice City</h1>
-    <p>Sua cidade à beira-mar, peça por peça. Continue de onde parou em qualquer aparelho.</p>
+  <div class="mcard">
+    <div class="menu-brand">
+      <img src="/icons/logo.png" alt="" class="menulogo">
+      <div><h1>Vice City</h1><p>Construa sua cidade à beira-mar.</p></div>
+    </div>
+    <div class="menu-actions">
     <button class="mhero" id="mCont"><svg class="ic"><use href="#i-play"/></svg><span class="lb">Continuar</span></button>
     <div class="mgroup">
       <button class="mrow" id="mCamp"><span class="mic" style="--c:#ff9f43"><svg class="ic"><use href="#i-flag"/></svg></span><span class="lb">Nova campanha</span><svg class="chev"><use href="#i-chev"/></svg></button>
@@ -236,7 +239,7 @@
       <button class="mrow hide" id="mInstall"><span class="mic" style="--c:#af52de"><svg class="ic"><use href="#i-down"/></svg></span><span class="lb">Instalar no aparelho</span><svg class="chev"><use href="#i-chev"/></svg></button>
       <button class="mrow" id="mHelp"><span class="mic" style="--c:#8e8e93"><svg class="ic"><use href="#i-pad"/></svg></span><span class="lb">Controles</span><svg class="chev"><use href="#i-chev"/></svg></button>
     </div>
-    <div class="fine">Protótipo jogável</div>
+    </div>
   </div>
 </div>
 
@@ -246,7 +249,7 @@
     <kbd>WASD / setas</kbd><span>Mover a câmera (ou arrastar com o botão do meio / botão esquerdo no modo seleção)</span>
     <kbd>Botão direito + arrastar</kbd><span>Girar a câmera</span>
     <kbd>Roda do mouse</kbd><span>Zoom</span>
-    <kbd>Clique</kbd><span>Construir / selecionar</span>
+    <kbd>Clique ou toque</kbd><span>Selecione uma construção. Arraste no mapa e solte para construir ou mudar de lote.</span>
     <kbd>Q / E</kbd><span>Girar a peça livremente (15°). Segure Shift para 3°</span>
     <kbd>F</kbd><span>Liga/desliga o alinhamento automático à rua</span>
     <kbd>Rua</kbd><span>Clique para marcar pontos da curva. Enter, duplo clique ou botão direito termina</span>
@@ -308,7 +311,7 @@ document.getElementById('c').addEventListener('webglcontextcreationerror', funct
 </script>
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/supabase.js"></script>
-<script src="/config.js?v=16"></script>
-<script src="/js/game.js?v=16"></script>
+<script src="/config.js?v=17"></script>
+<script src="/js/game.js?v=17"></script>
 </body>
 </html>

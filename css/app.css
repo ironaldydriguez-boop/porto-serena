@@ -625,3 +625,30 @@ html.infoon #side,html.infoon #cats{display:none!important}
 #info{max-width:min(230px,72%)}
 #prod,.modal>.panel{max-height:78%;overflow:auto}
 @media(prefers-reduced-motion:reduce){#arrival,#arrival progress{animation:none;transition:none}}
+
+#menu{background:linear-gradient(115deg,#092831bb,#0c2429a0 46%,#0928314f);backdrop-filter:none}
+#menu .mcard{width:min(780px,96%);max-height:90%;display:grid;grid-template-columns:1fr minmax(220px,315px);gap:clamp(18px,5vw,76px);align-items:center;padding:clamp(16px,4vw,42px);text-align:left;background:linear-gradient(117deg,#0d353bd9,#142c31f7);border:1px solid #d8ece04a;border-radius:26px;box-shadow:0 26px 85px #071a24a6}
+#menu .menu-brand{min-width:0;display:grid;justify-items:start;gap:18px}
+#menu .menulogo{max-height:76px;width:auto;margin:0;filter:drop-shadow(0 8px 22px #061e23a1);animation:none}
+#menu .mcard h1{font:800 clamp(42px,9vw,107px)/.87 Nunito,system-ui,sans-serif;letter-spacing:-.09em;color:#fff1d5;text-shadow:0 6px 25px #0b2329;text-wrap:balance}
+#menu .mcard p{margin:13px 0 0;color:#cde1d9;font:600 14px/1.35 Inter,system-ui,sans-serif}
+#menu .menu-actions{padding:9px 11px;border-radius:18px;background:#f5eee1;color:#233637}
+#menu .mgroup{margin:6px 0;background:#e5e2d6;border:0;border-radius:12px}
+#menu .mrow{color:#234047;background:transparent}
+#menu .mrow:hover,#menu .mrow:focus-visible{background:#fcf6e8}
+#menu .mhero{border:0;background:#146361;color:#fff7dc;text-shadow:none;box-shadow:none;min-height:40px}
+#menu .mrow .chev{color:#6d8984}
+.facility-up{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:6px 0;padding:6px 8px;border-radius:9px;background:#64bba22c;font-size:12px;color:inherit}
+.facility-up .btn{min-height:29px;height:auto;margin-left:auto;padding:5px 10px}
+.facility-up .nds{width:auto}
+@media(max-width:540px) and (orientation:portrait){
+  html:not(.rot) #menu .mcard{width:min(350px,92%);grid-template-columns:1fr;gap:12px}
+  html:not(.rot) #menu .menu-brand{grid-template-columns:auto 1fr;align-items:center;gap:12px}
+  html:not(.rot) #menu .menulogo{max-height:44px}
+}
+@media(max-height:460px){
+  #menu .mcard{padding:12px 18px;gap:18px}
+  #menu .menulogo{max-height:46px}
+  #menu .mrow{min-height:34px}
+  #menu .mcard h1{font-size:clamp(34px,8vw,74px)}
+}
