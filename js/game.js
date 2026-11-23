@@ -305,7 +305,14 @@ const MODELS={
 
   arvore:(v,R)=>tree(v,R,'round'),
   flores:(v,R)=>{v.box(0,0,0,1.7,.3,1.1,C.stone);v.box(0,.3,0,1.5,.05,.9,'#6b4a2f');const fc=pick2(R,FLOW);for(let i=0;i<9;i++){const x=-.55+(i%3)*.55,z=-.28+Math.floor(i/3)*.28;v.box(x,.35,z,.2,.25,.2,LEAF[1]);v.box(x,.6,z,.22,.18,.22,R()<.7?fc:pick2(R,FLOW));}},
-  poste:(v)=>{v.cyl(0,0,0,.2,.3,C.dark,8);v.cyl(0,.3,0,.08,2.9,C.dark,8,.06);v.cyl(0,3.1,0,.26,.45,C.lamp,8,.2,1);v.cyl(0,3.55,0,.34,.25,C.dark,8,0);},
+  poste:(v)=>{
+    const graphite='#394b4e';
+    v.cyl(0,0,0,.134,.12,graphite,12,.1);
+    v.cyl(0,.1,0,.056,1.86,graphite,10,.045);
+    v.box(0,1.9,.075,.10,.075,.23,graphite);
+    v.box(0,1.91,.165,.185,.072,.185,graphite);
+    v.box(0,1.887,.17,.143,.024,.146,'#ffdea1',1);
+  },
   banco:(v)=>{for(const x of [-.6,.6])v.box(x,0,0,.12,.45,.45,C.dark);v.box(0,.45,0,1.6,.1,.5,C.wood);v.box(0,.55,-.22,1.6,.45,.08,C.wood);},
 };
 
@@ -356,9 +363,10 @@ const B={
   cipreste:{n:'Cipreste',cat:'dec',cost:{m:4},r:.6,beauty:1.2,req:'paisagismo'},
   arbusto:{n:'Arbusto florido',cat:'dec',cost:{m:2},r:.6,beauty:.7},
   flores:{n:'Canteiro de flores',cat:'dec',cost:{m:4},r:.9,beauty:1.6},
-  poste:{n:'Poste de luz',cat:'dec',cost:{m:6},r:.35,beauty:.8},
+  poste:{n:'Poste de luz',cat:'dec',cost:{m:6},r:.23,beauty:.8,d:'Luminária baixa que se encaixa na calçada.'},
   banco:{n:'Banco',cat:'dec',cost:{m:5},r:.8,beauty:.6},
 };
+const VEGETATION=new Set(['arvore','palmeira','oliveira','cipreste','arbusto']);
 const TIERS=['Camponeses','Artesãos','Burguesia','Metropolitanos'],TAX=[.06,.13,.32,.42];
 const NEEDS=[['agua','comida'],['agua','comida','energia','mercado','capela'],['agua','comida','energia','mercado','capela','cafe','teatro'],['agua','comida','energia','mercado','cafe','lazer']];
 const NEEDN={agua:'Água (poço ou encanada)',energia:'Energia elétrica',lazer:'Lazer (praia, balada ou estádio)',comida:'Comida',mercado:'Mercado',capela:'Capela',cafe:'Café',teatro:'Teatro'};
@@ -447,7 +455,10 @@ p.y+=h;vDepth=aDepth;vN=normalize(vec3(-g.x,1.,-g.y));vec4 wp=modelMatrix*vec4(p
 void main(){vec3 V=normalize(cameraPosition-vW);vec3 N=vN;float r1=sin(vW.x*1.9+uTime*1.7)*sin(vW.z*2.3-uTime*1.4),r2=sin(vW.x*3.7-uTime*2.3+vW.z*1.1);N=normalize(N+vec3(r1*.05+r2*.025,0.,r1*.04-r2*.03));
 float fres=pow(1.-max(dot(N,V),0.),3.);vec3 base=vDepth<.18?mix(uShallow,uMid,vDepth/.18):mix(uMid,uDeep,clamp((vDepth-.18)/.6,0.,1.));
 vec3 col=mix(base,uSky*1.05,clamp(fres*.65,0.,.75));vec3 H=normalize(normalize(uSun)+V);float sp=pow(max(dot(N,H),0.),140.);col+=uSunCol*sp*1.6*(1.-uNight*.8);
-float fz=smoothstep(.06,0.,vDepth);float band=.5+.5*sin(vDepth*260.-uTime*2.2+sin(vW.x*.3)*2.);col=mix(col,vec3(1.),fz*(.35+.45*band));
+float shallows=1.-smoothstep(.015,.082,vDepth);
+float ripple=.5+.5*sin(vDepth*292.-uTime*1.85+sin(vW.x*.32+vW.z*.21)*1.15);
+float sheets=smoothstep(.58,.94,ripple);
+col=mix(col,vec3(.88,.99,.96),shallows*(.08+.51*sheets));
 col*=mix(1.,.32,uNight);col+=vec3(.02,.04,.08)*uNight;gl_FragColor=vec4(col,1.);
 #include <fog_fragment>
 }`});
@@ -526,9 +537,9 @@ function makeModel(t,seed,color,grade=1,lot=B[t]?.r){const v=new Vox(),R=rng(see
     for(let i=0;i<15;i++){const y=(i%5)*.55+.25;drops.box((R()-.5)*1.45,y,.27-y*.35,.045,.26,.05,'#e4f8f1');}
     const stream=new THREE.Mesh(toGeo(drops.b),matBody);g.add(stream);g.userData.stream=stream;
   }
-  if(t==='poste'){const h=new THREE.Sprite(haloMat);h.scale.set(4.2,4.2,1);h.position.y=3.35;h.raycast=()=>{};g.add(h);}
-  if(t==='estadio')for(const [x,z] of [[11.6,9.5],[-11.6,9.5],[11.6,-9.5],[-11.6,-9.5]]){const h=new THREE.Sprite(haloMat);h.scale.set(9,9,1);h.position.set(x*.86,9.35,z*.86);h.raycast=()=>{};g.add(h);}
   const bounds=new THREE.Box3().setFromObject(g);
+  if(t==='poste'){const h=new THREE.Sprite(haloMat);h.scale.set(2.2,2.2,1);h.position.set(0,1.86,.17);h.raycast=()=>{};g.add(h);}
+  if(t==='estadio')for(const [x,z] of [[11.6,9.5],[-11.6,9.5],[11.6,-9.5],[-11.6,-9.5]]){const h=new THREE.Sprite(haloMat);h.scale.set(9,9,1);h.position.set(x*.86,9.35,z*.86);h.raycast=()=>{};g.add(h);}
   if(lot&&(B[t]?.cap||grade>1)){
     const radius=Math.max(Math.abs(bounds.min.x),Math.abs(bounds.max.x),Math.abs(bounds.min.z),Math.abs(bounds.max.z));
     if(radius>lot){
@@ -539,17 +550,29 @@ function makeModel(t,seed,color,grade=1,lot=B[t]?.r){const v=new Vox(),R=rng(see
     }
   }
   g.userData.h=bounds.max.y;return g;}
-function addBuilding(o){const d=B[o.t];if(!d)return null;const b={id:o.id||nextId++,t:o.t,x:o.x,z:o.z,a:o.a||0,r:Number.isFinite(o.lot)&&o.lot>0?Math.min(o.lot,12):d.r,seed:o.seed||Math.floor(Math.random()*1e9),color:o.color||null,grade:clamp(Math.floor(Number(o.grade))||1,1,3),res:o.res||0,fam:o.fam||null,conn:false,hap:0,beauty:0,met:{},q:o.q||[],rd:o.rd||[]};
+function addBuilding(o){const d=B[o.t];if(!d)return null;const b={id:o.id||nextId++,t:o.t,x:o.x,z:o.z,a:o.a||0,r:o.t==='poste'?d.r:Number.isFinite(o.lot)&&o.lot>0?Math.min(o.lot,12):d.r,seed:o.seed||Math.floor(Math.random()*1e9),color:o.color||null,grade:clamp(Math.floor(Number(o.grade))||1,1,3),res:o.res||0,fam:o.fam||null,conn:false,hap:0,beauty:0,met:{},q:o.q||[],rd:o.rd||[]};
   nextId=Math.max(nextId,b.id+1);if(d.paint&&!b.color)b.color=WALLS[Math.floor(Math.random()*WALLS.length)];
-  b.obj=makeModel(b.t,b.seed,b.color,b.grade,b.r);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;rev++;if(o.anim)popIn(b);return b;}
+  b.obj=makeModel(b.t,b.seed,b.color,b.grade,b.r);positionBuilding(b);b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;rev++;if(o.anim)popIn(b);return b;}
+function positionBuilding(b){
+  const curb=b.t==='poste'?nearestRoad(b.x,b.z):null;
+  const y=curb&&curb.d>=RW&&curb.d<=SW+.09?curb.y+CURB_Y:0;
+  b.obj.position.set(b.x,y,b.z);b.obj.rotation.y=b.a;
+}
+function vegetationAt(x,z,r,existing){
+  return buildings.filter(b=>b!==existing&&VEGETATION.has(b.t)&&Math.hypot(b.x-x,b.z-z)<(r+b.r)*.9);
+}
+function clearPlotVegetation(x,z,r,existing){
+  for(const tree of vegetationAt(x,z,r,existing))removeBuilding(tree);
+}
 function removeBuilding(b){rev++;scene.remove(b.obj);if(b.icon)scene.remove(b.icon);buildings=buildings.filter(x=>x!==b);if(S.req&&S.req.id===b.id)clearReq();if(sel===b)select(null);dirty=true;}
-function recolor(b,col){rev++;b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col,b.grade,b.r);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
+function recolor(b,col){rev++;b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col,b.grade,b.r);positionBuilding(b);b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
 
 /* ---------- roads: asfalto, calçada, faixa central, cruzamentos automáticos e pontes ---------- */
 const roadMat=new THREE.MeshLambertMaterial({vertexColors:true});
 const RW=1.5,SW=2.25,BRIDGE_Y=1.5;
 const CURB_Y=.108, ASPHALT_Y=.136, PAINT_Y=.157;
-const CURB_COLOR='#cbc6bc', ASPHALT_COLOR='#484d54';
+const CURB_COLOR='#d7d0bf', ASPHALT_COLOR='#484d54';
+const POST_CURB=(RW+SW)/2;
 function roadGeometry(positions,colors){
   const geometry=new THREE.BufferGeometry();
   const normals=new Float32Array(positions.length);
@@ -1038,10 +1061,10 @@ function applyLight(tod){const D=sMix(SEAS_DAYLEN),h0=tod*24,h=clamp(12+(h0-12)*
   const day=clamp(el*1.6,0,1);nightK=clamp((.12-el)*3.5,0,1);
   let dir;if(el>-.05){dir=new THREE.Vector3(Math.cos(az)*.9,Math.max(.12,el)*(1-W.w[2]*.25),Math.sin(az)*.55+.35).normalize();
     sun.color.set('#ffb36b').lerp(new THREE.Color('#fff4e0'),clamp(el*1.8,0,1));if(W.w[1]>0)sun.color.lerp(new THREE.Color('#ffd29a'),W.w[1]*.35);if(W.w[2]>0)sun.color.lerp(new THREE.Color('#e4ecff'),W.w[2]*.35);
-    sun.intensity=(.25+.8*day)*(1-rn*.62);}
+    sun.intensity=(.24+.76*day)*(1-rn*.62);}
   else{dir=new THREE.Vector3(-.4,.85,.35).normalize();sun.color.set('#7d93cf');sun.intensity=.32*(1-rn*.5);}
   sun.position.set(cam.x+dir.x*120,dir.y*120,cam.z+dir.z*120);sun.target.position.set(cam.x,0,cam.z);
-  hemi.intensity=(.3+.35*day)*(1+rn*.15)+W.flash*1.6;hemi.color.set(sky).lerp(new THREE.Color('#ffffff'),.5);
+  hemi.intensity=(.31+.32*day)*(1+rn*.15)+W.flash*1.6;hemi.color.set(sky).lerp(new THREE.Color('#ffffff'),.5);
   {const U=waterMat.uniforms;U.uSun.value.copy(dir);U.uSunCol.value.copy(sun.color).multiplyScalar(1-rn*.7);U.uSky.value.copy(sky);U.uNight.value=nightK;}matGlow.emissiveIntensity=nightK*1.1;}
 
 /* ---------- UI helpers ---------- */
@@ -1104,8 +1127,9 @@ function freezeCamera(){
 function movePlot(b,gp){
   const p=placement(b.t,gp,b);
   if(p.bad){toast(p.bad);return false;}
-  const {x,z}=b;b.x=p.x;b.z=p.z;b.a=p.a;
-  b.obj.position.set(p.x,0,p.z);b.obj.rotation.y=p.a;
+  const {x,z}=b;
+  clearPlotVegetation(p.x,p.z,b.r,b);
+  b.x=p.x;b.z=p.z;b.a=p.a;positionBuilding(b);
   clearWild(p.x,p.z,b.r);restoreWildAt(x,z,b.r);rev++;dirty=true;recompute();syncLife();select(b);hud();save();
   if(p.warn)toast(p.warn);else sfx('build');
   return true;
@@ -1121,10 +1145,28 @@ function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}else if(t
   }
   document.documentElement.classList.toggle('placing',t==='place');
   if(t!=='place')placeT=null;$('#tip').classList.add('hide');setCatUI();}
+function roadSetback(t,r){
+  return B[t].cap?SW+r+.12:r*.85+2.14;
+}
+function curbPost(r,index,side){
+  const p=roadPoint(r,index,POST_CURB*side);
+  return {x:p.x,z:p.z,a:Math.atan2(side*p.tz,-side*p.tx)};
+}
+function postPosition(gp,reach=6){
+  const n=nearestRoad(gp.x,gp.z);
+  if(!n||n.d>reach)return null;
+  const p=roadPoint(n.r,n.i,0);
+  const side=Math.sign((gp.z-p.z)*p.tx-(gp.x-p.x)*p.tz)||1;
+  return curbPost(n.r,n.i,side);
+}
 function plotError(t,x,z,a,existing){
   const d=B[t],radius=existing?.r??d.r,ld=landDist(x,z);
   if(Math.abs(x)>MAPB-radius||Math.abs(z)>MAPB-radius)return 'Fora da área da cidade';
-  if(d.coast){
+  if(t==='poste'){
+    const road=nearestRoad(x,z);
+    if(!road||road.d>SW-.11)return 'Aproxime o poste de uma calçada';
+    if(road.d<RW+.14)return 'Escolha um trecho da calçada fora do cruzamento';
+  }else if(d.coast){
     if(ld<-2.5||ld>(t==='praia'?8:4))return 'Precisa ficar na beira do mar';
     if(t!=='praia'&&landDist(x+Math.sin(a)*6,z+Math.cos(a)*6)>-1)return 'A ponta do cais precisa alcançar a água';
   }else{
@@ -1137,28 +1179,32 @@ function plotError(t,x,z,a,existing){
     if(hillAt(x,z)>.5)return 'Terreno de morro: íngreme demais';
   }
   for(const b of buildings){
-    if(b===existing)continue;
+    if(b===existing||VEGETATION.has(b.t))continue;
     const k=B[b.t].cat==='dec'&&d.cat==='dec'?.75:.9;
     if(Math.hypot(b.x-x,b.z-z)<(radius+b.r)*k)return 'Espaço ocupado';
   }
   const n=nearestRoad(x,z);
-  if(n&&n.d<radius*.85+2.1)return 'Em cima da rua';
+  if(t!=='poste'&&n&&n.d<roadSetback(t,radius)-.06)return 'Em cima da rua ou da calçada';
   if(d.nearWater&&ld>9&&!buildings.some(b=>b.t==='lagoa'&&dist(b,{x,z})<12))return 'Precisa ficar perto do mar ou de uma lagoa';
   return '';
 }
 function placement(t,gp,existing=null){
   const d=B[t],radius=existing?.r??d.r;let {x,z}=gridPoint(gp),a=quarter(existing?.a??manualRot);
-  if(d.coast){
+  if(t==='poste'){
+    const post=postPosition(gp);
+    if(!post)return {x,z,a,bad:'Aproxime o poste de uma calçada',warn:''};
+    ({x,z,a}=post);
+  }else if(d.coast){
     const e=1.5,gx=landDist(x+e,z)-landDist(x-e,z),gz=landDist(x,z+e)-landDist(x,z-e);
     a=quarter(Math.atan2(-gx,-gz));
   }else if(align&&d.cat!=='dec'){
     const n=streetFront(gp.x,gp.z);
     if(n&&n.d<radius+5){
-      const edge=Math.ceil((radius*.85+2.14)/GRID)*GRID;
+      const edge=d.cap?roadSetback(t,radius):Math.ceil(roadSetback(t,radius)/GRID)*GRID;
       if(n.alongX){
-        const side=gp.z>=n.z?1:-1;z=grid(n.z)+side*edge;a=side>0?Math.PI:0;
+        const side=gp.z>=n.z?1:-1;z=(d.cap?n.z:grid(n.z))+side*edge;a=side>0?Math.PI:0;
       }else{
-        const side=gp.x>=n.x?1:-1;x=grid(n.x)+side*edge;a=-side*TURN;
+        const side=gp.x>=n.x?1:-1;x=(d.cap?n.x:grid(n.x))+side*edge;a=-side*TURN;
       }
     }
   }
@@ -1177,6 +1223,7 @@ function confirmPlacement(){
   // Consume the pending lot once. A second tap requires choosing another location.
   setTool('select');
   pay(B[t].cost);
+  clearPlotVegetation(p.x,p.z,B[t].r,null);
   const b=addBuilding({t,x:p.x,z:p.z,a:p.a,anim:true});
   gainXP(Math.max(1,Math.round((B[t].cost.m||0)/25)));
   sfx(B[t].cat==='dec'?'pop':'build');
@@ -1374,14 +1421,38 @@ $$('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.add('h
 
 /* ---------- save/load ---------- */
 const KEY='porto-serena-save-v1';
-function snapshot(){return {v:2,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,lot:b.r,grade:b.grade,res:b.res,fam:b.fam,q:b.q,rd:b.rd})),r:roads.map(r=>r.pts),gridRoads:roads.map(r=>r.orthogonal),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
+function updateSavedFrontages(){
+  let changed=false;
+  for(const b of buildings){
+    if(b.t!=='poste'&&!B[b.t].cap)continue;
+    const n=nearestRoad(b.x,b.z);
+    if(!n)continue;
+    let p;
+    if(b.t==='poste'){
+      p=postPosition(b,12);
+      if(!p||plotError(b.t,p.x,p.z,p.a,b))continue;
+    }else{
+      const setback=roadSetback(b.t,b.r);
+      if(n.d<setback+.23||n.d>b.r+3.85)continue;
+      const dx=(n.x-b.x)/n.d,dz=(n.z-b.z)/n.d;
+      if(Math.sin(b.a)*dx+Math.cos(b.a)*dz<.8)continue;
+      p={x:n.x-dx*setback,z:n.z-dz*setback,a:b.a};
+      if(plotError(b.t,p.x,p.z,p.a,b)||vegetationAt(p.x,p.z,b.r,b).length)continue;
+    }
+    if(dist(b,p)<.025)continue;
+    const {x,z}=b;Object.assign(b,p);positionBuilding(b);
+    clearWild(b.x,b.z,b.r);restoreWildAt(x,z,b.r);changed=true;
+  }
+  if(changed){dirty=true;rev++;}
+}
+function snapshot(){return {v:2,curbLayout:1,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,lot:b.r,grade:b.grade,res:b.res,fam:b.fam,q:b.q,rd:b.rd})),r:roads.map(r=>r.pts),gridRoads:roads.map(r=>r.orthogonal),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
 function save(){if(!S||inMenu||rev===savedRev)return;localTs=Date.now();savedRev=rev;try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){}}
 function hasSave(){try{return !!localStorage.getItem(KEY);}catch(e){return false;}}
 function clearWorld(){if(tool==='move')setTool('select');graphDirty=true;clearJunctions();for(const b of buildings.slice())scene.remove(b.obj);buildings=[];for(const r of roads)disposeRoad(r);roads=[];clearLife();
   for(const t of wild)if(!t.alive){t.alive=true;wildMesh[t.k].setMatrixAt(t.i,t.matrix);wildMesh[t.k].instanceMatrix.needsUpdate=true;}
   closeRequest();select(null);logs.length=0;$('#log').innerHTML='';}
 function load(obj){try{const o=obj||JSON.parse(localStorage.getItem(KEY));if(o.city)cityName=o.city;clearWorld();S=Object.assign(freshState(o.S.mode),o.S,{done:new Set(o.S.done),req:null});S.inv=S.inv||{};
-  o.r.forEach((pts,i)=>addRoad(pts,!!o.gridRoads?.[i]));for(const b of o.b)addBuilding(b);Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:clamp(o.cam.dist||80,ZOOM_NEAR,ZOOM_FAR)});localTs=o.ts||0;savedRev=rev;return true;}catch(e){return false;}}
+  o.r.forEach((pts,i)=>addRoad(pts,!!o.gridRoads?.[i]));for(const b of o.b)addBuilding(b);if(!o.curbLayout)updateSavedFrontages();Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:clamp(o.cam.dist||80,ZOOM_NEAR,ZOOM_FAR)});localTs=o.ts||0;savedRev=rev;return true;}catch(e){return false;}}
 
 /* ---------- demo village (menu backdrop & starting town) ---------- */
 function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x:26,z:-6}];addRoad(p);addRoad([{x:0,z:6},{x:2,z:18},{x:-4,z:30}]);
@@ -1393,11 +1464,16 @@ function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x
 
 /* ---------- flow ---------- */
 let inMenu=true,photo=false,arrivalTime=0;
+function coastalView(){
+  Object.assign(cam,{tx:10,tz:30,tyaw:.045,tpitch:.84,tdist:110});
+}
 function startGame(mode,cont,obj){const entering=inMenu;lockLandscape();$('#menu').classList.add('hide');$('#ui').classList.remove('hide');inMenu=false;
-  if(cont&&load(obj)){}else{clearWorld();S=freshState(mode);if(mode==='sandbox'){S.m=S.w=S.f=1e9;}else{starterCity();S.m=2000;S.w=200;S.f=150;S.bank=60;for(const b of buildings)b.conn=true;}cam.tx=14;cam.tz=-8;cam.tdist=92;cam.tpitch=.78;
+  const loaded=cont&&load(obj);
+  if(!loaded){clearWorld();S=freshState(mode);if(mode==='sandbox'){S.m=S.w=S.f=1e9;}else{starterCity();S.m=2000;S.w=200;S.f=150;S.bank=60;for(const b of buildings)b.conn=true;}
     log(mode==='sandbox'?'Modo sandbox: construa livremente.':'Bem-vindo(a) a Vice City! A cidade já tem moradores esperando por você.');if(mode==='campaign')S.tut=0;}
+  if(entering||!loaded)coastalView();
   if(entering&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    cam.dist=Math.min(ZOOM_FAR,cam.tdist+70);cam.pitch=.46;cam.yaw=cam.tyaw-.72;cam.z=cam.tz+32;arrivalTime=2.7;
+    cam.dist=Math.min(ZOOM_FAR,cam.tdist+36);cam.pitch=.69;cam.yaw=cam.tyaw-.19;cam.x=cam.tx;cam.z=cam.tz+13;arrivalTime=2.7;
   }
   dirty=true;tick();if(cont)savedRev=rev;showObj();setTool('select');openCat=null;setCatUI();
   save();}
@@ -1717,7 +1793,8 @@ function previewFrame(){const tip=$('#tip');ctxBar();plotGrid.visible=false;if(i
   if(ghost&&p){
     const t=movingPlot?.t??placeT,d=B[t];
     plotGrid.position.set(p.x,.024,p.z);plotGrid.visible=!d.coast;
-    ghost.position.set(p.x,0,p.z);ghost.rotation.y=p.a;ghostMat.emissive.set(p.bad?'#8b1e1e':p.warn?'#7a5c10':'#1f6b33');
+    const street=t==='poste'&&!p.bad?nearestRoad(p.x,p.z):null;
+    ghost.position.set(p.x,street?street.y+CURB_Y:0,p.z);ghost.rotation.y=p.a;ghostMat.emissive.set(p.bad?'#8b1e1e':p.warn?'#7a5c10':'#1f6b33');
     ring.visible=!!d.rad;if(d.rad){ring.scale.setScalar(d.rad);ring.position.x=p.x;ring.position.z=p.z;}
     if(!placing){
       const cov=d.cap?'<br>'+NEEDS[d.tier].map(n=>{const ok=n==='comida'?(S.f>.5||sand()):buildings.some(s=>B[s.t].serv===n&&s.conn&&Math.hypot(s.x-p.x,s.z-p.z)<=B[s.t].rad);return `<span style="color:${ok?'var(--ok)':'var(--bad)'}">${ok?'✓':'✗'} ${NEEDN[n]}</span>`;}).join(' · '):'';
@@ -1906,9 +1983,12 @@ $('#bHelp2').onclick=()=>{if(sand()){toast('O tutorial é da campanha');return;}
 $('#bLvl').onclick=()=>toast(`Nível ${S.lvl}: ${Math.floor(S.xp)}/${xpNeed(S.lvl)} de experiência. Construa, produza e colete para subir.`);
 
 /* ---------- cidade inicial: avenidas, prédios, moradores, praia e ilhas ---------- */
-function besideRoad(r,i,side,t,extra={}){const n=r.s.length;i=clamp(i,1,n-2);const s=r.s[i],q=r.s[i+1],tx=q.x-s.x,tz=q.z-s.z,l=Math.hypot(tx,tz)||1,off=B[t].r+2.7;
-  const x=grid(s.x+(-tz/l)*off*side),z=grid(s.z+(tx/l)*off*side),a=quarter(Math.atan2(s.x-x,s.z-z));
-  for(const b of buildings)if(Math.hypot(b.x-x,b.z-z)<(b.r+B[t].r)*.92)return null;for(const rr of roads){const nn=nearestOn(rr,{x,z});if(nn&&nn.d<B[t].r*.85+2.1)return null;}
+function besideRoad(r,i,side,t,extra={}){const n=r.s.length;i=clamp(i,1,n-2);const s=r.s[i],q=r.s[i+1],tx=q.x-s.x,tz=q.z-s.z,l=Math.hypot(tx,tz)||1,off=B[t].cap?roadSetback(t,B[t].r):B[t].r+2.7;
+  let x=s.x+(-tz/l)*off*side,z=s.z+(tx/l)*off*side;
+  if(!B[t].cap||Math.abs(tx)>Math.abs(tz))x=grid(x);
+  if(!B[t].cap||Math.abs(tx)<=Math.abs(tz))z=grid(z);
+  const a=quarter(Math.atan2(s.x-x,s.z-z));
+  for(const b of buildings)if(Math.hypot(b.x-x,b.z-z)<(b.r+B[t].r)*.92)return null;for(const rr of roads){const nn=nearestOn(rr,{x,z});if(nn&&nn.d<roadSetback(t,B[t].r)-.06)return null;}
   if(landDist(x,z)<B[t].r+1||hillAt(x,z)>.3)return null;
   const res=B[t].cap?Math.max(2,Math.round(B[t].cap*.7)):0;return addBuilding({t,x,z,a,res,fam:res?newFam():null,...extra});}
 function lineup(r,types,side,from=3,gap=1.6){let i=from;for(const t of types){if(i>=r.s.length-3)break;besideRoad(r,i,side,t);i+=Math.ceil(B[t].r*2+gap);}}
@@ -1928,8 +2008,17 @@ function starterCity(){
     roads.some(r=>r.s.some((_,i)=>i%4===1&&(besideRoad(r,i,-1,type)||besideRoad(r,i,1,type))));
   }
   for(const x of [-30,2,34]){const z=coastZ(x)-4,p=placement('praia',{x,z});if(!p.bad||p.bad==='Recursos insuficientes')addBuilding({t:'praia',x:p.x,z:p.z,a:p.a});}
-  for(const r of [av,tr,ro])for(let i=6;i<r.s.length-4;i+=9)for(const sd of [1,-1]){const s=r.s[i],q=r.s[i+1],tx=q.x-s.x,tz=q.z-s.z,l=Math.hypot(tx,tz)||1,x=s.x+(-tz/l)*2.9*sd,z=s.z+(tx/l)*2.9*sd;
-    if(!buildings.some(b=>Math.hypot(b.x-x,b.z-z)<b.r+.6)&&landDist(x,z)>1.5)addBuilding({t:r===ro?'palmeira':(i/9|0)%2?'poste':'arvore',x,z,a:Math.random()*6});}}
+  for(const r of [ro,av,tr,r2])for(let i=6;i<r.len-4;i+=11){
+    const side=Math.floor(i/11)%2===0?1:-1;
+    const post=curbPost(r,i,side);
+    if(!plotError('poste',post.x,post.z,post.a,null))addBuilding({t:'poste',...post});
+    if(r===ro){
+      const palm=roadPoint(r,i+4,2.85*side);
+      if(landDist(palm.x,palm.z)>1.5&&!plotError('palmeira',palm.x,palm.z,0,null)&&!vegetationAt(palm.x,palm.z,B.palmeira.r,null).length)
+        addBuilding({t:'palmeira',x:palm.x,z:palm.z,a:Math.random()*TURN});
+    }
+  }
+}
 /* ilhas com resort, palmeiras e farol (cenário) */
 {const deco=(t,x,z,a=0)=>{const m=makeModel(t,Math.floor(Math.random()*1e6));m.position.set(x,hillAt(x,z),z);m.rotation.y=a;m.traverse(o=>o.raycast=()=>{});scene.add(m);};
   deco('resort',-12,127,.15);deco('farol',-72,124);
@@ -1981,7 +2070,7 @@ $('#mCont').classList.toggle('hide',!hasSave());
 let last=performance.now(),acc=0,T=0,saveT=0,cloudT=0;
 function frame(now){const rdt=clamp((now-last)/1000,0,.1);last=Math.max(last,now);T+=rdt;
   updatePinch();
-  if(inMenu){if(!ptrs.size){cam.tyaw+=rdt*.05;cam.tx=0;cam.tz=24;cam.tdist=78;cam.tpitch=.6;}S.tod=(S.tod+rdt/200)%1;}
+  if(inMenu){if(!ptrs.size){coastalView();cam.tyaw+=Math.sin(T*.16)*.055;}S.tod=(S.tod+rdt/200)%1;}
   else if(!photo){const sp=S.speed;const {f,r}=camVecs(),k=ptrs.size?0:cam.tdist*.9*rdt;
     if(keys.KeyW||keys.ArrowUp)panBy(f.x*k,f.z*k);if(keys.KeyS||keys.ArrowDown)panBy(-f.x*k,-f.z*k);if(keys.KeyA||keys.ArrowLeft)panBy(-r.x*k,-r.z*k);if(keys.KeyD||keys.ArrowRight)panBy(r.x*k,r.z*k);
     S.tod+=rdt*sp/420;if(S.tod>=1){S.tod-=1;S.day++;}
@@ -2335,7 +2424,7 @@ function roadGuide(on){if(guideObj){scene.remove(guideObj);guideObj=null;}if(!on
   const disc=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,.12,32),new THREE.MeshBasicMaterial({color:'#39d36b',transparent:true,opacity:.85}));disc.position.set(RT.b.x,.2,RT.b.z);g.add(disc);g.userData.disc=disc;scene.add(g);guideObj=g;}
 function flyCam(x,z,d,p){if(ptrs.size)return;cam.tx=x;cam.tz=z;if(d)cam.tdist=clamp(d,ZOOM_NEAR,ZOOM_FAR);if(p)cam.tpitch=p;}
 const TUT=[
-  {t:'Olá, prefeito(a)! Eu sou a Lia, urbanista de Vice City. A cidade já tem avenidas, prédios e moradores. Vou te ensinar a fazê-la crescer.',btn:'Vamos lá',enter:()=>flyCam(14,-8,92,.78)},
+  {t:'Olá, prefeito(a)! Eu sou a Lia, urbanista de Vice City. A cidade já tem avenidas, prédios e moradores. Vou te ensinar a fazê-la crescer.',btn:'Vamos lá',enter:()=>{if(!ptrs.size)coastalView();}},
   {t:'Primeiro, uma rua nova. Toque em Ruas.',el:'[data-c=rua]',ok:()=>tool==='road'},
   {t:'Arraste o dedo da avenida até o ponto verde. A rua se conecta sozinha.',enter:()=>{roadGuide(true);flyCam(28,-44,62,.9);tb().roads=roads.length;},leave:()=>roadGuide(false),
     w:()=>({x:RT.b.x,z:RT.b.z,y:0,r:3}),ok:()=>roads.length>tb().roads&&roads.slice(tb().roads).some(r=>r.s.some(q=>Math.hypot(q.x-RT.b.x,q.z-RT.b.z)<7))},
