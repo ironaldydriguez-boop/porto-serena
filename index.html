@@ -17,11 +17,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=14">
+<link rel="stylesheet" href="/css/app.css?v=15">
 </head>
 <body>
 <div id="app">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.6 4.9-1.8 1 .3 2.1-1.9 1.9-2.1-.3-1 1.8h-2.7l-1-1.8-2.1.3-1.9-1.9.3-2.1-1.8-1v-2.8l1.8-1-.3-2.1 1.9-1.9 2.1.3 1-1.8h2.7l1 1.8 2.1-.3 1.9 1.9-.3 2.1 1.8 1z" fill="currentColor"/></symbol>
+ <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></symbol>
+ <symbol id="m-metal" viewBox="0 0 32 32"><path d="M5 20l6-8h16l-6 8z" fill="#cfd8e0"/><path d="M5 20h16v4H5z" fill="#8f9ba6"/><path d="M21 20l6-8v4l-6 8z" fill="#a9b5c0"/><path d="M9 21l6-8h4" stroke="#fff" stroke-width="1.2" opacity=".7" fill="none"/></symbol>
+ <symbol id="m-plastico" viewBox="0 0 32 32"><rect x="11" y="4" width="10" height="4" rx="1.5" fill="#2f86d6"/><path d="M10 9h12l1 3v14a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3V12z" fill="#e8607a"/><path d="M12 14h3v11h-3z" fill="#fff" opacity=".45"/></symbol>
+ <symbol id="m-pregos" viewBox="0 0 32 32"><g fill="#9aa7b4"><rect x="6" y="5" width="9" height="3" rx="1.2"/><path d="M9.5 8h2l-.5 18-.5 2-.5-2z"/><rect x="17" y="7" width="9" height="3" rx="1.2" transform="rotate(18 21 8)"/><path d="M19.8 10.5l2 .6-5.5 16.7-1.2 1.6.1-2z"/></g><path d="M10 9v15" stroke="#fff" stroke-width=".8" opacity=".6"/></symbol>
+ <symbol id="m-tabuas" viewBox="0 0 32 32"><g transform="rotate(-18 16 16)"><rect x="3" y="9" width="26" height="5" rx="1" fill="#d39a5e"/><rect x="3" y="15" width="26" height="5" rx="1" fill="#b97c43"/><rect x="3" y="21" width="26" height="5" rx="1" fill="#d39a5e"/></g><path d="M8 13h8M10 19h9" stroke="#8a5a2e" stroke-width="1" opacity=".5"/></symbol>
+ <symbol id="m-tinta" viewBox="0 0 32 32"><path d="M7 10h18l-2 17H9z" fill="#dfe6ea"/><ellipse cx="16" cy="10" rx="9" ry="3" fill="#4aa3df"/><path d="M10 15h12v6H10z" fill="#4aa3df"/><path d="M7 10c0-7 18-7 18 0" stroke="#7d868f" stroke-width="1.6" fill="none"/></symbol>
+ <symbol id="m-martelo" viewBox="0 0 32 32"><rect x="14" y="11" width="4" height="18" rx="1.5" fill="#b97c43"/><path d="M6 5h17l4 3v4H6z" fill="#7d868f"/><path d="M6 5h17v3H6z" fill="#a9b5c0"/></symbol>
+ <symbol id="m-trena" viewBox="0 0 32 32"><rect x="4" y="8" width="18" height="18" rx="5" fill="#f2c94c"/><circle cx="13" cy="17" r="4.5" fill="#3a3f45"/><path d="M22 20h7v4h-7z" fill="#e9ecef"/><path d="M24 20v2M26 20v2" stroke="#3a3f45" stroke-width=".8"/></symbol>
+ <symbol id="m-coin" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#f5c542"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#c9951c" stroke-width="2"/><path d="M16 10v12M13 13h5a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h5" stroke="#a87810" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+ <symbol id="m-up" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#3ec46d"/><path d="M16 8l7 8h-4v7h-6v-7H9z" fill="#fff"/></symbol>
  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="var(--c,currentColor)"/><circle cx="12" cy="12" r="5" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.6"/></symbol>
  <symbol id="i-wood" viewBox="0 0 24 24"><rect x="3" y="8" width="16" height="8" rx="4" fill="var(--c,currentColor)"/><ellipse cx="19" cy="12" rx="2.6" ry="4" fill="#f6d3a8"/><circle cx="19" cy="12" r="1.2" fill="rgba(0,0,0,.25)"/></symbol>
  <symbol id="i-food" viewBox="0 0 24 24"><path d="M12 7c-2-2.5-7-2-7 3.5 0 5 3.5 9.5 7 9.5s7-4.5 7-9.5C19 5 14 4.5 12 7z" fill="var(--c,currentColor)"/><path d="M12 7c0-2 1-3.5 3-4.2" stroke="#5c8a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
@@ -50,30 +61,40 @@
 <div id="tiltT" class="tilt hide"></div><div id="tiltB" class="tilt hide"></div>
 
 <div id="ui" class="hide">
-  <div id="top" class="glass">
-    <div class="hud-res">
-      <span class="brand"><img src="/icons/logo.png" alt="" class="brandlogo"><b>Vice City</b></span>
-      <span class="chip" title="Moedas"><svg class="ic" style="--c:#ffd36b"><use href="#i-coin"/></svg><span id="rM">0</span><small>moedas</small><span class="rate" id="dM"></span></span>
-      <span class="chip" title="Madeira"><svg class="ic" style="--c:#e0a66e"><use href="#i-wood"/></svg><span id="rW">0</span><small>madeira</small></span>
-      <span class="chip" title="Comida"><svg class="ic" style="--c:#a6e39b"><use href="#i-food"/></svg><span id="rF">0</span><small>comida</small><span class="rate" id="dF"></span></span>
-      <span class="chip" title="Mercadorias"><svg class="ic" style="--c:#d6c6f2"><use href="#i-box"/></svg><span id="rG">0</span><small>mercadorias</small></span>
-      <span class="chip" title="Energia (produção/consumo)"><svg class="ic" style="--c:#ffd84d"><use href="#i-bolt"/></svg><span id="rE">0</span><small>MW</small></span>
-      <span class="chip" title="Água encanada (produção/consumo)"><svg class="ic" style="--c:#7fd0ff"><use href="#i-drop"/></svg><span id="rA">0</span><small>água</small></span>
-      <span class="chip" title="Moradores"><svg class="ic" style="--c:#ffb7c2"><use href="#i-people"/></svg><span id="rP">0</span><small>moradores</small></span>
-      <span class="chip" title="Felicidade média"><svg class="ic" style="--c:#9fd8f0"><use href="#i-smile"/></svg><span id="rH">0%</span><small>felicidade</small></span>
+  <div id="top">
+    <div class="tl">
+      <button class="lvl" id="bLvl" title="Nível da cidade"><svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" class="rb"/><circle cx="32" cy="32" r="27" class="rf" id="lvlRing"/></svg><svg class="star" viewBox="0 0 24 24"><use href="#i-star"/></svg><b id="lvlN">1</b></button>
+      <div class="tlp">
+        <span class="pill glass" title="Moradores"><svg class="ic" style="--c:#8fd0ff"><use href="#i-people"/></svg><span id="rP">0</span></span>
+        <span class="pill glass" title="Felicidade média"><svg class="ic" style="--c:#9be37f"><use href="#i-smile"/></svg><span id="rH">0%</span></span>
+      </div>
     </div>
-    <div class="hud-ctl">
-      <button class="tbtn" id="bRes" title="Pesquisa"><svg class="ic"><use href="#i-flask"/></svg><span class="lb">Pesquisa</span><span id="rR"></span></button>
-      <span class="chip" id="clock">Dia 1 · 08:00</span>
-      <div class="speed" id="speed"><button data-s="0" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="3">3x</button></div>
-      <button class="tbtn ico on" id="bAlign" title="Alinhar construções à rua (F)"><svg class="ic"><use href="#i-magnet"/></svg><span class="lb">Alinhar</span></button>
-      <button class="tbtn ico" id="bMusic" title="Música"><svg class="ic"><use href="#i-music"/></svg><span class="lb">Música</span></button>
-      <button class="tbtn ico" id="bPhoto" title="Modo foto"><svg class="ic"><use href="#i-camera"/></svg><span class="lb">Foto</span></button>
-      <button class="tbtn ico" id="bRank" title="Ranking"><svg class="ic"><use href="#i-trophy"/></svg><span class="lb">Ranking</span></button>
-      <button class="tbtn ico" id="bAcc" title="Conta"><svg class="ic"><use href="#i-user"/></svg><span class="lb" id="bAccL">Entrar</span></button>
-      <button class="tbtn ico hide" id="bInstall" title="Instalar"><svg class="ic"><use href="#i-down"/></svg><span class="lb">Instalar</span></button>
-      <button class="tbtn ico" id="bMenu" title="Menu"><svg class="ic"><use href="#i-grid"/></svg><span class="lb">Menu</span></button>
+    <div class="tc"><span class="pill glass" id="clock">Verão · Dia 1 · 08:00</span><div class="speed glass" id="speed"><button data-s="0" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="3">3x</button></div></div>
+    <div class="tr">
+      <span class="pill money glass" title="Moedas"><svg class="ic" style="--c:#ffd36b"><use href="#i-coin"/></svg><span id="rM">0</span><span class="rate" id="dM"></span><button class="plus" id="bMoney" aria-label="Como ganhar moedas">+</button></span>
+      <span class="pill glass" title="Madeira"><svg class="ic" style="--c:#e0a66e"><use href="#i-wood"/></svg><span id="rW">0</span></span>
+      <button class="gear glass" id="bGear" aria-label="Opções"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
     </div>
+  </div>
+  <div id="lcol">
+    <button class="dep glass" id="bDep" title="Depósito de materiais"><svg class="ic" style="--c:#c9a26b"><use href="#i-box"/></svg><span id="depN">0/30</span></button>
+    <div class="stat glass">
+      <span title="Comida"><svg class="ic" style="--c:#a6e39b"><use href="#i-food"/></svg><span id="rF">0</span><span class="rate" id="dF"></span></span>
+      <span title="Mercadorias"><svg class="ic" style="--c:#d6c6f2"><use href="#i-box"/></svg><span id="rG">0</span></span>
+      <span title="Energia (produção/consumo)"><svg class="ic" style="--c:#ffd84d"><use href="#i-bolt"/></svg><span id="rE">0</span></span>
+      <span title="Água encanada (produção/consumo)"><svg class="ic" style="--c:#7fd0ff"><use href="#i-drop"/></svg><span id="rA">0</span></span>
+    </div>
+  </div>
+  <div id="gearM" class="glass hide">
+    <button class="tbtn" id="bRes"><svg class="ic"><use href="#i-flask"/></svg><span class="lb">Pesquisa</span><span id="rR"></span></button>
+    <button class="tbtn on" id="bAlign"><svg class="ic"><use href="#i-magnet"/></svg><span class="lb">Alinhar à rua</span></button>
+    <button class="tbtn" id="bMusic"><svg class="ic"><use href="#i-music"/></svg><span class="lb">Música</span></button>
+    <button class="tbtn" id="bPhoto"><svg class="ic"><use href="#i-camera"/></svg><span class="lb">Modo foto</span></button>
+    <button class="tbtn" id="bRank"><svg class="ic"><use href="#i-trophy"/></svg><span class="lb">Ranking</span></button>
+    <button class="tbtn" id="bAcc"><svg class="ic"><use href="#i-user"/></svg><span class="lb" id="bAccL">Entrar</span></button>
+    <button class="tbtn hide" id="bInstall"><svg class="ic"><use href="#i-down"/></svg><span class="lb">Instalar app</span></button>
+    <button class="tbtn" id="bHelp2"><svg class="ic"><use href="#i-flag"/></svg><span class="lb">Rever tutorial</span></button>
+    <button class="tbtn" id="bMenu"><svg class="ic"><use href="#i-grid"/></svg><span class="lb">Menu principal</span></button>
   </div>
 
   <div id="side">
@@ -84,12 +105,20 @@
 
   <div id="info" class="panel hide"></div>
 
+  <div id="bub"></div>
+  <div id="prod" class="glass hide"></div>
   <div id="dock">
     <div id="tray" class="panel hide"></div>
     <div id="cats" class="panel"></div>
   </div>
 </div>
 
+
+<div id="depP" class="modal hide"><div class="panel dpan"><div class="dhead"><h2>Depósito</h2><button class="x" data-close aria-label="Fechar">×</button></div>
+  <div class="dcap"><div class="mtrack"><div id="depBar"></div></div><span id="depT"></span><button class="btn pri" id="depUp"></button></div>
+  <div id="depList"></div><p class="objp">Materiais saem da Fábrica e das Lojas. Use para melhorar casas ou venda para ganhar moedas.</p></div></div>
+<div id="money" class="modal hide"><div class="panel dpan"><div class="dhead"><h2>Como ganhar moedas</h2><button class="x" data-close aria-label="Fechar">×</button></div>
+  <ol class="howto"><li><b>Impostos:</b> moradores felizes pagam impostos. Toque na moeda sobre a Prefeitura para coletar.</li><li><b>Vender materiais:</b> abra o Depósito e venda o que você produziu na Fábrica e nas Lojas.</li><li><b>Melhorar casas:</b> casas melhores têm mais moradores e pagam mais imposto.</li><li><b>Comércio:</b> Torres comerciais, Escritórios e o Cais do porto rendem moedas sem parar.</li><li><b>Missões e níveis:</b> cada missão e cada nível novo dá recompensa.</li></ol></div></div>
 
 <section id="auth" class="hide" aria-label="Entrar no Vice City">
   <header class="a-top">
@@ -154,6 +183,7 @@
 
 <div id="handoff" class="panel hide" role="status"><span>Sua cidade foi atualizada pelo seu outro aparelho. O jogo pausou aqui.</span><button class="btn pri" id="hoTake">Continuar aqui</button></div>
 
+<div id="dim" class="hide" aria-hidden="true"></div>
 <div id="hl" class="hide" aria-hidden="true"></div>
 <div id="guide" class="hide" role="dialog" aria-label="Tutorial">
   <svg class="lia" viewBox="0 0 120 150" aria-hidden="true">
@@ -266,7 +296,7 @@
 </div>
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/supabase.js"></script>
-<script src="/config.js?v=14"></script>
-<script src="/js/game.js?v=14"></script>
+<script src="/config.js?v=15"></script>
+<script src="/js/game.js?v=15"></script>
 </body>
 </html>
