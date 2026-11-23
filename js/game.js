@@ -4,7 +4,7 @@ const rand=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.le
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function hash(x,z){const s=Math.sin(x*127.1+z*311.7)*43758.5453;return s-Math.floor(s);}
 function vnoise(x,z){const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi,u=xf*xf*(3-2*xf),v=zf*zf*(3-2*zf);const a=hash(xi,zi),b=hash(xi+1,zi),c=hash(xi,zi+1),d=hash(xi+1,zi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
-const MAPB=150, GRID=2, TURN=Math.PI/2;
+const MAPB=150, GRID=2, TURN=Math.PI/2, ZOOM_NEAR=24, ZOOM_FAR=156;
 const grid=n=>Math.round(n/GRID)*GRID;
 const gridPoint=({x,z})=>({x:grid(x),z:grid(z)});
 const quarter=a=>Math.round(a/TURN)*TURN;
@@ -242,7 +242,15 @@ const MODELS={
   cipreste:(v,R)=>tree(v,R,'cypress'),
   arbusto:(v,R)=>{for(let i=0;i<3;i++)v.ball(rand(-.35,.35),.4,rand(-.35,.35),.5+R()*.2,pick2(R,LEAF),.8);for(let i=0;i<5;i++)v.ball(rand(-.45,.45),.65+R()*.2,rand(-.45,.45),.09,pick2(R,FLOW),1,0,0);},
   palmeira:(v,R)=>tree(v,R,'palm'),
-  predio:(v,R,c)=>{const w=5.2,d=5.2,fl=8,fh=1.9;v.box(0,0,0,w+.4,.4,d+.4,C.stone2);v.box(0,.4,0,w,1.9,d,'#e8e2d6');v.box(0,.4,d/2+.02,2.2,1.6,.08,'#3a4a5a',1);
+  mansao:(v,R,c)=>{
+    v.box(0,0,0,7.2,.12,7.2,'#93ad72');
+    v.at(0,-.95,()=>house(v,R,{w:5.6,d:3.8,fl:4,wall:c,hip:true,balcony:true}));
+    v.box(0,.13,2.65,5.8,.14,1.82,'#e6d4b4');
+    v.box(.15,.27,2.65,3.8,.07,1.25,'#1aa9bc');
+    v.box(.15,.342,2.88,3.42,.012,.035,'#73e1df');
+    for(const x of [-3.05,3.05]){v.at(x,2.73,()=>tree(v,R,'cypress'));v.box(x,.13,.4,.33,.45,3.1,'#648b52');}
+  },
+  predio:(v,R,c,ex)=>{const w=5.2,d=5.2,fl=8+(ex.grade-1)*3,fh=1.9;v.box(0,0,0,w+.4,.4,d+.4,C.stone2);v.box(0,.4,0,w,1.9,d,'#e8e2d6');v.box(0,.4,d/2+.02,2.2,1.6,.08,'#3a4a5a',1);
     v.box(0,2.3,0,w,fl*fh,d,c);for(let f=0;f<fl;f++){const y=2.3+f*fh+.45;for(let k=-1;k<=1;k++){v.box(k*1.6,y,d/2+.03,1,1.05,.08,C.win,1);v.box(k*1.6,y,-d/2-.03,1,1.05,.08,C.win,1);v.box(w/2+.03,y,k*1.6,.08,1.05,1,C.win,1);v.box(-w/2-.03,y,k*1.6,.08,1.05,1,C.win,1);}
       if(f%2===0)v.box(0,y-.5,d/2+.45,w*.85,.12,.9,C.trim);v.box(0,y-.5,d/2+.86,w*.85,.42,.06,'#c9d6dd');}
     const top=2.3+fl*fh;v.box(0,top,0,w+.2,.35,d+.2,C.trim);v.cyl(1.3,top+.35,1.1,.55,1.2,'#9aa4ad',10);v.cyl(1.3,top+1.55,1.1,.6,.25,'#7d868f',10,0);v.box(-1.2,top+.35,-1,1.4,.6,1.2,'#b9c1c8');},
@@ -325,6 +333,7 @@ const B={
   cafe:{n:'Café',cat:'com',cost:{m:110,w:25},r:3,rad:18,serv:'cafe',jobs:2,paint:1,req:'oficios',d:'Atende casas num raio de 18.'},
   praca:{n:'Praça com fonte',cat:'com',cost:{m:90},r:4.3,rad:24,serv:'praca',beauty:5,req:'paisagismo',d:'Bonita e muito querida.'},
   teatro:{n:'Teatro',cat:'com',cost:{m:300,w:80},r:5,rad:32,serv:'teatro',jobs:4,req:'arquitetura',d:'Atende casas num raio de 32.'},
+  mansao:{n:'Mansão com piscina',cat:'mor',cost:{m:550,w:110},r:4,cap:18,tier:2,paint:1,d:'Residência com varanda, jardim e piscina.'},
   predio:{n:'Prédio residencial',cat:'mor',cost:{m:420,w:90},r:3.4,cap:30,tier:3,paint:1,req:'urbanismo',d:'Moradia da cidade grande. Precisa de energia, água, mercado, café e lazer.'},
   pasto:{n:'Pasto com vacas',cat:'trab',cost:{m:70,w:20},r:4.4,jobs:2,food:1.8,d:'Produz comida: leite e queijo.'},
   galinheiro:{n:'Galinheiro',cat:'trab',cost:{m:45,w:15},r:2.8,jobs:1,food:1.1,d:'Produz comida: ovos.'},
@@ -354,21 +363,20 @@ const TIERS=['Camponeses','Artesãos','Burguesia','Metropolitanos'],TAX=[.06,.13
 const NEEDS=[['agua','comida'],['agua','comida','energia','mercado','capela'],['agua','comida','energia','mercado','capela','cafe','teatro'],['agua','comida','energia','mercado','cafe','lazer']];
 const NEEDN={agua:'Água (poço ou encanada)',energia:'Energia elétrica',lazer:'Lazer (praia, balada ou estádio)',comida:'Comida',mercado:'Mercado',capela:'Capela',cafe:'Café',teatro:'Teatro'};
 const RS={
-  alvenaria:{n:'Alvenaria',cost:25,req:[],d:'Libera Sobrado e Capela.'},
-  paisagismo:{n:'Paisagismo',cost:20,req:[],d:'Libera Praça com fonte e Cipreste.'},
-  moagem:{n:'Moagem',cost:40,req:['alvenaria'],d:'Libera o Moinho e o Silo.'},
-  engenharia:{n:'Engenharia',cost:50,req:['alvenaria'],d:'Libera Turbina eólica e Estação de água.'},
-  industria:{n:'Indústria',cost:110,req:['engenharia'],d:'Libera a Termelétrica.'},
-  lazer:{n:'Lazer e eventos',cost:100,req:['oficios'],d:'Libera Estádio e Balada.'},
-  naval:{n:'Engenharia naval',cost:120,req:['comercio'],d:'Libera o Estaleiro.'},
-  urbanismo:{n:'Urbanismo',cost:220,req:['arquitetura','engenharia'],d:'Libera Prédio residencial e Escritórios.'},
-  oficios:{n:'Ofícios',cost:60,req:['alvenaria'],d:'Libera Oficina de artesão e Café.'},
-  comercio:{n:'Comércio marítimo',cost:90,req:['oficios'],d:'Libera o Cais do porto.'},
-  arquitetura:{n:'Arquitetura',cost:130,req:['oficios','paisagismo'],d:'Libera Casa burguesa e Teatro.'},
+  alvenaria:{n:'Alvenaria',cost:25,req:[],d:'Pesquisa municipal sobre sobrado e capela.'},
+  paisagismo:{n:'Paisagismo',cost:20,req:[],d:'Pesquisa municipal sobre praça com fonte e cipreste.'},
+  moagem:{n:'Moagem',cost:40,req:['alvenaria'],d:'Pesquisa municipal sobre o moinho e o silo.'},
+  engenharia:{n:'Engenharia',cost:50,req:['alvenaria'],d:'Pesquisa municipal sobre turbina eólica e estação de água.'},
+  industria:{n:'Indústria',cost:110,req:['engenharia'],d:'Pesquisa municipal sobre a termelétrica.'},
+  lazer:{n:'Lazer e eventos',cost:100,req:['oficios'],d:'Pesquisa municipal sobre estádio e balada.'},
+  naval:{n:'Engenharia naval',cost:120,req:['comercio'],d:'Pesquisa municipal sobre o estaleiro.'},
+  urbanismo:{n:'Urbanismo',cost:220,req:['arquitetura','engenharia'],d:'Pesquisa municipal sobre prédio residencial e escritórios.'},
+  oficios:{n:'Ofícios',cost:60,req:['alvenaria'],d:'Pesquisa municipal sobre oficina de artesão e café.'},
+  comercio:{n:'Comércio marítimo',cost:90,req:['oficios'],d:'Pesquisa municipal sobre o cais do porto.'},
+  arquitetura:{n:'Arquitetura',cost:130,req:['oficios','paisagismo'],d:'Pesquisa municipal sobre casa burguesa e teatro.'},
   turismo:{n:'Turismo',cost:180,req:['comercio','arquitetura'],d:'Cais, praças e teatros atraem visitantes que gastam moedas.'},
 };
 const FAM=['Moretti','Russo','Bianchi','Costa','Ferreira','Lopes','Marino','Greco','Conti','Ricci','Santos','Rocha','Vidal','Navarro','Serra','Lombardi','Esposito','Duarte','Pires','Mancini','Galli','Barros','Coelho','Caruso','Fontana','Leone','Valente','Amato','Sardo','Morais'];
-const FIRST=['Giulia','Marco','Inês','Tomás','Lucia','Pietro','Clara','Rafael','Sofia','Matteo','Beatriz','Elena','Dona Rosa','Seu Aldo'];
 
 /* ---------- terreno liso (sem quadradinhos) e mar com ondas ---------- */
 const TER=700,TSEG=LOW?210:320;
@@ -474,10 +482,10 @@ function clearWild(x,z,r){let n=0;const m=new THREE.Matrix4().makeScale(0,0,0);f
 let cityName='';try{cityName=localStorage.getItem('ps-city')||'';}catch(e){}
 let rev=0,savedRev=-1,localTs=0;const DEV=(()=>{try{let d=localStorage.getItem('vc-dev');if(!d){d=Math.random().toString(36).slice(2,10);localStorage.setItem('vc-dev',d);}return d;}catch(e){return 'x'+Math.random().toString(36).slice(2,8);}})();
 let S,buildings=[],roads=[],dirty=true,nextId=1;
-function freshState(mode){return{tut:99,mode,inv:{},cap:30,xp:0,lvl:1,bank:0,upg:0,collected:0,m:500,w:150,f:80,g:0,rp:0,cur:null,done:new Set(),time:0,tod:8/24,day:1,speed:1,obj:0,pop:0,hap:0,staff:1,rates:{},req:null,nextReq:60,sold:0,won:false};}
+function freshState(mode){return{tut:99,mode,inv:{},cap:30,xp:0,lvl:1,bank:0,upg:0,collected:0,m:500,w:150,f:80,g:0,rp:0,cur:null,done:new Set(),time:0,tod:8/24,day:1,speed:1,obj:0,pop:0,hap:0,staff:1,rates:{},req:null,nextReq:150,sold:0,won:false};}
 const sand=()=>S&&S.mode==='sandbox';
 const researched=k=>sand()||S.done.has(k);
-const unlocked=t=>!B[t].req||researched(B[t].req);
+const capacityFor=b=>B[b.t].cap+(b.t==='predio'?(b.grade-1)*8:0);
 const newFam=()=>{const used=new Set(buildings.map(b=>b.fam));const free=FAM.filter(f=>!used.has(f));return free.length?pick(free):pick(FAM)+' '+pick(['Jr.','II','da Costa','do Porto']);};
 const houses=()=>buildings.filter(b=>B[b.t].cap);
 const count=(t,conn)=>buildings.filter(b=>b.t===t&&(!conn||b.conn)).length;
@@ -486,7 +494,7 @@ function pay(c,k=1){if(sand())return;S.m-=(c.m||0)*k;S.w-=(c.w||0)*k;}
 const costTxt=c=>[c.m?`${c.m} moedas`:'',c.w?`${c.w} madeira`:''].filter(Boolean).join(' · ');
 
 /* ---------- buildings ---------- */
-function makeModel(t,seed,color,grade=1){const v=new Vox(),R=rng(seed),ex={};MODELS[t](v,R,color||WALLS[Math.floor(R()*WALLS.length)],ex);
+function makeModel(t,seed,color,grade=1,lot=B[t]?.r){const v=new Vox(),R=rng(seed),ex={grade};MODELS[t](v,R,color||WALLS[Math.floor(R()*WALLS.length)],ex);
   if(t==='fazenda'&&grade>1){
     v.cyl(2.95,0,2.5,.57,2.7,'#b8b7a7',18);
     v.cyl(2.95,2.7,2.5,.63,.54,'#657979',18,.15);
@@ -520,12 +528,22 @@ function makeModel(t,seed,color,grade=1){const v=new Vox(),R=rng(seed),ex={};MOD
   }
   if(t==='poste'){const h=new THREE.Sprite(haloMat);h.scale.set(4.2,4.2,1);h.position.y=3.35;h.raycast=()=>{};g.add(h);}
   if(t==='estadio')for(const [x,z] of [[11.6,9.5],[-11.6,9.5],[11.6,-9.5],[-11.6,-9.5]]){const h=new THREE.Sprite(haloMat);h.scale.set(9,9,1);h.position.set(x*.86,9.35,z*.86);h.raycast=()=>{};g.add(h);}
-  g.userData.h=new THREE.Box3().setFromObject(g).max.y;return g;}
-function addBuilding(o){const d=B[o.t];if(!d)return null;const b={id:o.id||nextId++,t:o.t,x:o.x,z:o.z,a:o.a||0,r:d.r,seed:o.seed||Math.floor(Math.random()*1e9),color:o.color||null,grade:clamp(Math.floor(Number(o.grade))||1,1,3),res:o.res||0,fam:o.fam||null,conn:false,hap:0,beauty:0,met:{},q:o.q||[],rd:o.rd||[]};
+  const bounds=new THREE.Box3().setFromObject(g);
+  if(lot&&(B[t]?.cap||grade>1)){
+    const radius=Math.max(Math.abs(bounds.min.x),Math.abs(bounds.max.x),Math.abs(bounds.min.z),Math.abs(bounds.max.z));
+    if(radius>lot){
+      const footprint=new THREE.Group();
+      footprint.scale.set(lot/radius,1,lot/radius);
+      for(const child of [...g.children])footprint.add(child);
+      g.add(footprint);
+    }
+  }
+  g.userData.h=bounds.max.y;return g;}
+function addBuilding(o){const d=B[o.t];if(!d)return null;const b={id:o.id||nextId++,t:o.t,x:o.x,z:o.z,a:o.a||0,r:Number.isFinite(o.lot)&&o.lot>0?Math.min(o.lot,12):d.r,seed:o.seed||Math.floor(Math.random()*1e9),color:o.color||null,grade:clamp(Math.floor(Number(o.grade))||1,1,3),res:o.res||0,fam:o.fam||null,conn:false,hap:0,beauty:0,met:{},q:o.q||[],rd:o.rd||[]};
   nextId=Math.max(nextId,b.id+1);if(d.paint&&!b.color)b.color=WALLS[Math.floor(Math.random()*WALLS.length)];
-  b.obj=makeModel(b.t,b.seed,b.color,b.grade);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;rev++;if(o.anim)popIn(b);return b;}
+  b.obj=makeModel(b.t,b.seed,b.color,b.grade,b.r);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);buildings.push(b);clearWild(b.x,b.z,b.r);dirty=true;rev++;if(o.anim)popIn(b);return b;}
 function removeBuilding(b){rev++;scene.remove(b.obj);if(b.icon)scene.remove(b.icon);buildings=buildings.filter(x=>x!==b);if(S.req&&S.req.id===b.id)clearReq();if(sel===b)select(null);dirty=true;}
-function recolor(b,col){rev++;b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col,b.grade);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
+function recolor(b,col){rev++;b.color=col;scene.remove(b.obj);b.obj=makeModel(b.t,b.seed,col,b.grade,b.r);b.obj.position.set(b.x,0,b.z);b.obj.rotation.y=b.a;b.obj.traverse(m=>m.userData.b=b);scene.add(b.obj);}
 
 /* ---------- roads: asfalto, calçada, faixa central, cruzamentos automáticos e pontes ---------- */
 const roadMat=new THREE.MeshLambertMaterial({vertexColors:true});
@@ -1042,18 +1060,26 @@ const CATS=[['rua','Ruas'],['mor','Moradia'],['loja','Comércio'],['trab','Indú
 $('#cats').innerHTML=CATS.map(([k,n])=>`<button class="cat" data-c="${k}"><svg viewBox="0 0 24 24">${ICON[k]}</svg>${n}</button>`).join('');
 let tool='select',openCat=null,placeT=null,manualRot=0,align=true,roadPts=[],sel=null;
 const thumbs={};
-function refreshTray(){if(!openCat)return;const items=Object.keys(B).filter(t=>B[t].cat===openCat);
-  $('#tray').innerHTML=items.map(t=>{const d=B[t],lk=!unlocked(t);return `<button class="item${lk?' lock':''}${placeT===t?' on':''}" data-t="${t}" ${lk?`data-lock="Pesquise ${RS[d.req].n}"`:''} title="${d.d||''}"><img src="${thumbs[t]||''}" alt=""><b>${d.n}</b><small>${sand()?'grátis':costTxt(d.cost)}</small></button>`;}).join('')+'<button class="trayx" aria-label="Fechar">×</button>';}
+function refreshTray(){
+  if(!openCat)return;
+  const items=Object.entries(B).filter(([,d])=>d.cat===openCat);
+  const cards=items.map(([t,d])=>{
+    const costs=Object.entries(d.cost).filter(([,n])=>n).map(([k,n])=>
+      `<span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="${k==='m'?'#i-coin':'#i-wood'}"/></svg>${n}</span>`).join('');
+    return `<button class="item" data-t="${t}" aria-label="${d.n}${sand()?'':', '+costTxt(d.cost)}" title="${d.n}"><img src="${thumbs[t]||''}" alt=""><b>${d.n}</b><small>${sand()?'Grátis':costs}</small></button>`;
+  }).join('');
+  $('#tray').innerHTML=`<div class="tray-items">${cards}</div><button class="trayx" aria-label="Fechar catálogo">×</button>`;
+}
 function setCatUI(){$$('.cat').forEach(b=>b.classList.toggle('on',b.dataset.c===openCat||(b.dataset.c==='rua'&&tool==='road')||(b.dataset.c==='dem'&&tool==='demolish')));$('#tray').classList.toggle('hide',!openCat);document.documentElement.classList.toggle('trayon',!!openCat);refreshTray();}
 $('#cats').addEventListener('click',e=>{const b=e.target.closest('.cat');if(!b)return;const c=b.dataset.c;
   if(c==='rua'){setTool(tool==='road'?'select':'road');openCat=null;}else if(c==='dem'){setTool(tool==='demolish'?'select':'demolish');openCat=null;}else{openCat=openCat===c?null:c;if(tool!=='place')setTool('select');}setCatUI();});
-$('#tray').addEventListener('click',e=>{if(e.target.closest('.trayx')){openCat=null;if(tool==='place')setTool('select');setCatUI();return;}const b=e.target.closest('.item');if(!b)return;const t=b.dataset.t;if(!unlocked(t)){toast(`Requer pesquisa: ${RS[B[t].req].n}`);openResearch();return;}placeT=t;openCat=null;setTool('place');setCatUI();canvas.focus();});
+$('#tray').addEventListener('click',e=>{if(e.target.closest('.trayx')){openCat=null;if(tool==='place')setTool('select');setCatUI();return;}const b=e.target.closest('.item');if(!b)return;const t=b.dataset.t;placeT=t;openCat=null;setTool('place');setCatUI();canvas.focus();});
 let ghost=null,movingPlot=null;
 const plotGrid=new THREE.GridHelper(28,14,0xffdea0,0xffdea0);
 plotGrid.position.y=.024;plotGrid.material.transparent=true;plotGrid.material.opacity=.33;
 plotGrid.visible=false;scene.add(plotGrid);
 function createPlotGhost(t,existing){
-  const model=makeModel(t,existing?.seed??7,existing?.color,existing?.grade??1);
+  const model=makeModel(t,existing?.seed??7,existing?.color,existing?.grade??1,existing?.r);
   model.traverse(m=>{if(m.isMesh){m.material=ghostMat;m.castShadow=false;}});
   scene.add(model);return model;
 }
@@ -1091,15 +1117,15 @@ function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}tool=t;mo
   if(t==='place'){ghost=createPlotGhost(placeT);manualRot=0;}
   if(t!=='place')placeT=null;$('#tip').classList.add('hide');setCatUI();}
 function plotError(t,x,z,a,existing){
-  const d=B[t],ld=landDist(x,z);
-  if(Math.abs(x)>MAPB-d.r||Math.abs(z)>MAPB-d.r)return 'Fora da área da cidade';
+  const d=B[t],radius=existing?.r??d.r,ld=landDist(x,z);
+  if(Math.abs(x)>MAPB-radius||Math.abs(z)>MAPB-radius)return 'Fora da área da cidade';
   if(d.coast){
     if(ld<-2.5||ld>(t==='praia'?8:4))return 'Precisa ficar na beira do mar';
     if(t!=='praia'&&landDist(x+Math.sin(a)*6,z+Math.cos(a)*6)>-1)return 'A ponta do cais precisa alcançar a água';
   }else{
-    if(ld<d.r*.6+1)return 'Na água ou muito perto dela';
+    if(ld<radius*.6+1)return 'Na água ou muito perto dela';
     for(let i=0;i<8;i++){
-      const angle=i*Math.PI/4,px=x+Math.cos(angle)*d.r,pz=z+Math.sin(angle)*d.r;
+      const angle=i*Math.PI/4,px=x+Math.cos(angle)*radius,pz=z+Math.sin(angle)*radius;
       if(hillAt(px,pz)>.6)return 'Terreno de morro: íngreme demais';
       if(landDist(px,pz)<.4)return 'Muito perto da água';
     }
@@ -1108,22 +1134,22 @@ function plotError(t,x,z,a,existing){
   for(const b of buildings){
     if(b===existing)continue;
     const k=B[b.t].cat==='dec'&&d.cat==='dec'?.75:.9;
-    if(Math.hypot(b.x-x,b.z-z)<(d.r+b.r)*k)return 'Espaço ocupado';
+    if(Math.hypot(b.x-x,b.z-z)<(radius+b.r)*k)return 'Espaço ocupado';
   }
   const n=nearestRoad(x,z);
-  if(n&&n.d<d.r*.85+2.1)return 'Em cima da rua';
+  if(n&&n.d<radius*.85+2.1)return 'Em cima da rua';
   if(d.nearWater&&ld>9&&!buildings.some(b=>b.t==='lagoa'&&dist(b,{x,z})<12))return 'Precisa ficar perto do mar ou de uma lagoa';
   return '';
 }
 function placement(t,gp,existing=null){
-  const d=B[t];let {x,z}=gridPoint(gp),a=quarter(existing?.a??manualRot);
+  const d=B[t],radius=existing?.r??d.r;let {x,z}=gridPoint(gp),a=quarter(existing?.a??manualRot);
   if(d.coast){
     const e=1.5,gx=landDist(x+e,z)-landDist(x-e,z),gz=landDist(x,z+e)-landDist(x,z-e);
     a=quarter(Math.atan2(-gx,-gz));
   }else if(align&&d.cat!=='dec'){
     const n=streetFront(gp.x,gp.z);
-    if(n&&n.d<d.r+5){
-      const edge=Math.ceil((d.r*.85+2.14)/GRID)*GRID;
+    if(n&&n.d<radius+5){
+      const edge=Math.ceil((radius*.85+2.14)/GRID)*GRID;
       if(n.alongX){
         const side=gp.z>=n.z?1:-1;z=grid(n.z)+side*edge;a=side>0?Math.PI:0;
       }else{
@@ -1132,10 +1158,9 @@ function placement(t,gp,existing=null){
     }
   }
   let bad=plotError(t,x,z,a,existing);
-  const n=nearestRoad(x,z),warn=d.cat!=='dec'&&!d.coast&&(!n||n.d>d.r+4.4)?'Sem rua por perto: não vai funcionar':'';
+  const n=nearestRoad(x,z),warn=d.cat!=='dec'&&!d.coast&&(!n||n.d>radius+4.4)?'Sem rua por perto: não vai funcionar':'';
   if(!bad&&!existing){
     if(d.max&&count(t)>=d.max)bad='Só pode haver uma';
-    else if(!unlocked(t))bad='Precisa de pesquisa';
     else if(!afford(d.cost))bad='Recursos insuficientes';
   }
   return{x,z,a,bad,warn};
@@ -1186,10 +1211,14 @@ function pickB(){ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(
 function select(b){sel=b;selRing.visible=!!b;document.documentElement.classList.toggle('infoon',!!b&&!B[b.t].prod);$('#info').classList.toggle('hide',!b||!!(b&&B[b.t].prod));prodUI();if(b){selRing.scale.setScalar(b.r+.6);selRing.position.x=b.x;selRing.position.z=b.z;info();}}
 let lastInfo='';
 function info(){if(!sel)return;const b=sel,d=B[b.t];let h=`<h2>${d.n}</h2><div class="sub">${d.d||'Decoração: deixa a vizinhança mais bonita.'}</div>`;
-  if(b.t==='fazenda')h+=facilityUpgradeMarkup(b);
-  if(UPG[b.t]){const u=UPG[b.t];h+=`<div class="upg"><div class="sub">Melhorar para <b>${B[u.to].n}</b> · até ${B[u.to].cap} moradores</div><div class="nds">${sand()?'Grátis':needTxt(u.need)}</div>${houseExpansionError(b)?'<p class="sub">Use Mover para escolher um lote maior.</p>':''}<button class="btn pri" id="iUpg" ${canUpg(b)?'':'disabled'}>Melhorar</button></div>`;}
+  if(FACILITY_NEEDS[b.t])h+=facilityUpgradeMarkup(b);
+  if(UPG[b.t]){
+    const u=UPG[b.t];
+    h+=`<div class="upg"><div class="sub">Evoluir para <b>${B[u.to].n}</b> · até ${B[u.to].cap} moradores</div><div class="nds">${sand()?'Grátis':needTxt(u.need)}</div><button class="btn pri" id="iUpg" ${canUpg(b)?'':'disabled'}>Evoluir</button></div>`;
+  }
   if(d.cat!=='dec'&&!b.conn)h+=`<div class="need" style="color:var(--bad)"><i style="background:var(--bad)"></i>Sem rua por perto: não funciona</div>`;
-  if(d.cap){h+=`<div class="row"><span>Classe</span><span>${TIERS[d.tier]}</span></div><div class="row"><span>Família</span><span>${b.fam?b.fam:'Ninguém ainda'}</span></div><div class="row"><span>Moradores</span><span>${b.res} / ${d.cap}</span></div>`;
+  if(HOME_LEVEL[b.t])h+=`<div class="row"><span>Nível da casa</span><span>${HOME_LEVEL[b.t]} / 4</span></div>`;
+  if(d.cap){h+=`<div class="row"><span>Classe</span><span>${TIERS[d.tier]}</span></div><div class="row"><span>Família</span><span>${b.fam?b.fam:'Ninguém ainda'}</span></div><div class="row"><span>Moradores</span><span>${b.res} / ${capacityFor(b)}</span></div>`;
     h+=`<div class="row"><span>Felicidade</span><span>${b.hap}%</span></div><div class="bar"><div style="width:${b.hap}%;background:${b.hap<35?'var(--bad)':b.hap<60?'var(--sun)':'var(--ok)'}"></div></div>`;
     h+=NEEDS[d.tier].map(n=>`<div class="need"><i style="background:${b.met[n]?'var(--ok)':'var(--bad)'}"></i>${NEEDN[n]}</div>`).join('');h+=`<div class="row"><span>Beleza ao redor</span><span>${b.beauty.toFixed(1)} / 10</span></div>`;}
   if(b.t==='prefeitura')h+=`<div class="row"><span>Impostos guardados</span><span>${Math.floor(S.bank)} moedas</span></div><div class="btnrow"><button class="btn pri" id="iTax" ${S.bank>=1?'':'disabled'}>Coletar impostos</button></div>`;
@@ -1200,13 +1229,63 @@ function info(){if(!sel)return;const b=sel,d=B[b.t];let h=`<h2>${d.n}</h2><div c
 $('#info').addEventListener('click',e=>{if(e.target.dataset.col){recolor(sel,e.target.dataset.col);return;}if(e.target.id==='iMove'){startPlotMove();return;}if(e.target.id==='iDem'){demolish(sel);}if(e.target.id==='facilityUp'){upgradeFacility(sel);return;}if(e.target.id==='iUpg'){upgradeHouse(sel);return;}if(e.target.id==='iTax'){collectTax();info();return;}if(e.target.id==='iClose')select(null);});
 function demolish(b){if(!b)return;sfx('demolish');dust(b.x,b.z,b.r,16);pay(B[b.t].cost,-.5);log(`${B[b.t].n} demolido(a).`);removeBuilding(b);recompute();hud();}
 
-/* ---------- requests ---------- */
-let reqMark=null;
-function clearReq(){S.req=null;if(reqMark){scene.remove(reqMark);reqMark=null;}$('#req').classList.add('hide');}
-function showReq(){const r=S.req;if(!r)return;$('#req').classList.remove('hide');$('#reqT').innerHTML=`<b>${r.who}</b> gostaria de ${r.want} perto de casa.`;$('#reqR').textContent=`Recompensa: 60 moedas · marcador amarelo sobre a casa`;
-  if(!reqMark){reqMark=new THREE.Mesh(new THREE.OctahedronGeometry(.55,0),new THREE.MeshBasicMaterial({color:'#ffd24d'}));scene.add(reqMark);}}
-const WANT={flores:'um canteiro de flores',banco:'um banco para descansar',poste:'um poste de luz',oliveira:'uma oliveira',arbusto:'um arbusto florido',cipreste:'um cipreste',praca:'uma praça com fonte'};
-function checkReqDone(b){const r=S.req;if(!r||b.t!==r.t)return;const h=buildings.find(x=>x.id===r.id);if(h&&dist(h,b)<12){if(!sand())S.m+=60;log(`<b>${r.who}</b> adorou o novo ${B[b.t].n.toLowerCase()}. +60 moedas`);toast('Pedido atendido! +60 moedas');clearReq();S.nextReq=S.time+rand(60,110);}}
+/* ---------- resident requests ---------- */
+const RESIDENT_REQUESTS={
+  agua:{icon:'i-drop',color:'#8eecff',title:'Falta água',text:'Construa um poço perto da casa ou amplie o abastecimento.'},
+  energia:{icon:'i-bolt',color:'#ffe474',title:'Falta energia',text:'Adicione uma fonte de energia ligada à malha de ruas.'},
+  flores:{icon:'i-star',color:'#ffc1d3',title:'Um canteiro de flores',text:'Plante flores a até 12 metros desta casa.'},
+  banco:{icon:'i-star',color:'#ffdc93',title:'Um banco na rua',text:'Coloque um banco a até 12 metros para a família descansar.'},
+  poste:{icon:'i-star',color:'#ffe39c',title:'Mais luz na rua',text:'Instale um poste a até 12 metros desta casa.'}
+};
+let reqOpenId=null;
+function closeRequest(){
+  reqOpenId=null;
+  $('#reqPop').classList.add('hide');
+}
+function clearReq(){S.req=null;closeRequest();}
+function showRequest(b){
+  const req=S.req;
+  if(!req||req.id!==b.id)return;
+  if(reqOpenId===b.id){closeRequest();return;}
+  const detail=RESIDENT_REQUESTS[req.kind],card=$('#reqPop');
+  $('#reqTitle').textContent=detail.title;
+  $('#reqMessage').textContent=detail.text;
+  reqOpenId=b.id;card.classList.remove('hide');
+}
+function fulfillRequest(){
+  if(!sand())S.m+=60;
+  clearReq();S.nextReq=S.time+rand(230,370);
+  toast('Pedido atendido! +60 moedas');rev++;
+}
+function checkReqDone(b){
+  const req=S.req;
+  if(!req||b.t!==req.kind)return;
+  const home=buildings.find(x=>x.id===req.id);
+  if(home&&dist(home,b)<12)fulfillRequest();
+}
+function tickResidentRequests(homes){
+  if(sand()||inTut())return;
+  const req=S.req;
+  if(req){
+    const home=homes.find(h=>h.id===req.id);
+    if(!home?.res||S.time>=req.until){clearReq();S.nextReq=S.time+rand(230,370);}
+    else if((req.kind==='agua'||req.kind==='energia')&&home.met[req.kind])fulfillRequest();
+    return;
+  }
+  if(S.time<S.nextReq)return;
+  const residents=homes.filter(h=>h.res>0&&h.conn);
+  const lacking=residents.filter(h=>!h.met.agua||!h.met.energia);
+  const home=lacking.length?pick(lacking):pick(residents);
+  if(home){
+    const kind=!home.met.agua?'agua':!home.met.energia?'energia':pick(['flores','banco','poste']);
+    S.req={id:home.id,kind,until:S.time+180};
+  }
+  S.nextReq=S.time+rand(230,370);
+}
+$('#reqDismiss').onclick=closeRequest;
+document.addEventListener('pointerdown',e=>{
+  if(reqOpenId!==null&&!e.target.closest('#reqPop,.bb.r'))closeRequest();
+});
 
 /* ---------- objectives ---------- */
 const decorN=()=>buildings.filter(b=>B[b.t].cat==='dec').length;
@@ -1256,16 +1335,17 @@ function tick(){rev++;if(dirty)recompute();const sb=sand();let pop=0;const hs=ho
   const docks=count('cais',1);const sell=Math.min(S.g+dg,docks*1.4*staff);dg-=sell;dm+=sell*7;S.sold+=sell;
   if(researched('turismo'))dm+=docks*1.5+count('praca',1)*.6+count('teatro',1)*1.2;df-=pop*.035;
   const servs=buildings.filter(b=>B[b.t].serv&&b.conn),beaut=buildings.filter(b=>B[b.t].beauty);let hs2=0,hn=0;
-  for(const h of hs){const d=B[h.t],needs=NEEDS[d.tier],met={};for(const n of needs)met[n]=sb||(n==='comida'?S.f>.5:n==='energia'?pOK.has(h.id):n==='agua'?(wOK.has(h.id)||servs.some(s=>B[s.t].serv==='agua'&&dist(s,h)<=B[s.t].rad)):servs.some(s=>B[s.t].serv===n&&dist(s,h)<=B[s.t].rad));
+  for(const h of hs){const d=B[h.t],needs=NEEDS[d.tier];
+    const met={agua:sb||wOK.has(h.id)||servs.some(s=>B[s.t].serv==='agua'&&dist(s,h)<=B[s.t].rad),
+      energia:sb||pOK.has(h.id)};
+    for(const n of needs)if(!(n in met))met[n]=sb||(n==='comida'?S.f>.5:servs.some(s=>B[s.t].serv===n&&dist(s,h)<=B[s.t].rad));
     let be=0;for(const o of beaut){const dd=dist(o,h);if(dd<12)be+=B[o.t].beauty*(1-dd/12);}for(const o of polls){const dd=dist(o,h);if(dd<20)be-=4*(1-dd/20);}h.beauty=clamp(be,-5,10);h.met=met;
     const mc=needs.filter(n=>met[n]).length;h.hap=h.conn?clamp(Math.round(mc/needs.length*75+Math.min(25,h.beauty*2.5)),0,100):0;if(h.res){hs2+=h.hap*h.res;hn+=h.res;}dt+=h.res*TAX[d.tier]*h.hap/100;
-    if(h.conn&&h.hap>=35&&h.res<d.cap&&Math.random()<.03+h.hap/100*.08){if(!h.res){h.fam=newFam();h.res=Math.min(d.cap,2);log(`A família <b>${h.fam}</b> chegou e se mudou para um(a) ${d.n.toLowerCase()}.`);}else h.res++;}
+    if(h.conn&&h.hap>=35&&h.res<capacityFor(h)&&Math.random()<.03+h.hap/100*.08){if(!h.res){h.fam=newFam();h.res=Math.min(capacityFor(h),2);log(`A família <b>${h.fam}</b> chegou e se mudou para um(a) ${d.n.toLowerCase()}.`);}else h.res++;}
     else if(h.res&&h.hap<25&&Math.random()<.04){h.res--;if(!h.res){log(`A família <b>${h.fam}</b> deixou a vila.`);h.fam=null;}}}
   S.hap=hn?Math.round(hs2/hn):0;const ph=buildings.find(b=>b.t==='prefeitura'&&b.conn);if(ph&&!sb)S.bank=Math.min(S.bank+dt,4000+S.pop*20);else dm+=dt;prodTick();if(!sb){S.f=Math.max(0,S.f+df);S.w+=dw;S.g=Math.max(0,S.g+dg);S.m+=dm;}S.rates={f:df,m:dm+(ph?0:0)+dt};
   if(S.cur&&!sb){S.rp+=.25+Math.sqrt(pop)*.06+count('escola',1)*.9*staff;if(S.rp>=RS[S.cur].cost){S.done.add(S.cur);toast(`Pesquisa concluída: ${RS[S.cur].n}`);log(`Pesquisa concluída: <b>${RS[S.cur].n}</b>.`);S.rp=0;S.cur=null;refreshTray();}}
-  if(!S.req&&S.time>S.nextReq){const occ=hs.filter(h=>h.res);if(occ.length){const h=pick(occ),opts=['flores','banco','poste','oliveira','arbusto'];if(unlocked('praca'))opts.push('praca');if(unlocked('cipreste'))opts.push('cipreste');
-      const t=pick(opts);S.req={id:h.id,t,want:WANT[t],until:S.time+180,who:`${pick(FIRST)} ${h.fam}`};log(`<b>${S.req.who}</b> fez um pedido.`);showReq();}S.nextReq=S.time+rand(70,120);}
-  if(S.req){const h=buildings.find(x=>x.id===S.req.id);if(!h)clearReq();else if(S.time>S.req.until){log(`<b>${S.req.who}</b> ficou um pouco decepcionado(a).`);clearReq();}}
+  tickResidentRequests(hs);
   if(!sb&&S.obj<OBJ.length&&OBJ[S.obj].f()){const o=OBJ[S.obj];S.m+=o.r;gainXP(10);toast(o.r?`Objetivo concluído! +${o.r} moedas`:'Objetivo concluído!');sfx('coin');log(`Objetivo concluído: ${o.t}.`);S.obj++;if(S.obj>=OBJ.length&&!S.won){S.won=true;$('#win').classList.remove('hide');}showObj();}
   syncLife();updateIcons();objBar();if(sel)info();hud();}
 
@@ -1279,14 +1359,14 @@ $$('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.add('h
 
 /* ---------- save/load ---------- */
 const KEY='porto-serena-save-v1';
-function snapshot(){return {v:2,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,grade:b.grade,res:b.res,fam:b.fam,q:b.q,rd:b.rd})),r:roads.map(r=>r.pts),gridRoads:roads.map(r=>r.orthogonal),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
+function snapshot(){return {v:2,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,lot:b.r,grade:b.grade,res:b.res,fam:b.fam,q:b.q,rd:b.rd})),r:roads.map(r=>r.pts),gridRoads:roads.map(r=>r.orthogonal),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
 function save(){if(!S||inMenu||rev===savedRev)return;localTs=Date.now();savedRev=rev;try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){}}
 function hasSave(){try{return !!localStorage.getItem(KEY);}catch(e){return false;}}
 function clearWorld(){if(tool==='move')setTool('select');graphDirty=true;clearJunctions();for(const b of buildings.slice())scene.remove(b.obj);buildings=[];for(const r of roads)disposeRoad(r);roads=[];clearLife();
   for(const t of wild)if(!t.alive){t.alive=true;wildMesh[t.k].setMatrixAt(t.i,t.matrix);wildMesh[t.k].instanceMatrix.needsUpdate=true;}
-  if(reqMark){scene.remove(reqMark);reqMark=null;}select(null);logs.length=0;$('#log').innerHTML='';}
+  closeRequest();select(null);logs.length=0;$('#log').innerHTML='';}
 function load(obj){try{const o=obj||JSON.parse(localStorage.getItem(KEY));if(o.city)cityName=o.city;clearWorld();S=Object.assign(freshState(o.S.mode),o.S,{done:new Set(o.S.done),req:null});S.inv=S.inv||{};
-  o.r.forEach((pts,i)=>addRoad(pts,!!o.gridRoads?.[i]));for(const b of o.b)addBuilding(b);Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:o.cam.dist});localTs=o.ts||0;savedRev=rev;return true;}catch(e){return false;}}
+  o.r.forEach((pts,i)=>addRoad(pts,!!o.gridRoads?.[i]));for(const b of o.b)addBuilding(b);Object.assign(cam,{tx:o.cam.x,tz:o.cam.z,tyaw:o.cam.yaw,tpitch:o.cam.pitch,tdist:clamp(o.cam.dist||80,ZOOM_NEAR,ZOOM_FAR)});localTs=o.ts||0;savedRev=rev;return true;}catch(e){return false;}}
 
 /* ---------- demo village (menu backdrop & starting town) ---------- */
 function demoVillage(){const p=[{x:-26,z:10},{x:-12,z:4},{x:0,z:6},{x:12,z:0},{x:26,z:-6}];addRoad(p);addRoad([{x:0,z:6},{x:2,z:18},{x:-4,z:30}]);
@@ -1302,7 +1382,7 @@ function startGame(mode,cont,obj){const entering=inMenu;lockLandscape();$('#menu
   if(cont&&load(obj)){}else{clearWorld();S=freshState(mode);if(mode==='sandbox'){S.m=S.w=S.f=1e9;}else{starterCity();S.m=2000;S.w=200;S.f=150;S.bank=60;for(const b of buildings)b.conn=true;}cam.tx=14;cam.tz=-8;cam.tdist=92;cam.tpitch=.78;
     log(mode==='sandbox'?'Modo sandbox: construa livremente.':'Bem-vindo(a) a Vice City! A cidade já tem moradores esperando por você.');if(mode==='campaign')S.tut=0;}
   if(entering&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    cam.dist=Math.min(230,cam.tdist+95);cam.pitch=.46;cam.yaw=cam.tyaw-.72;cam.z=cam.tz+32;arrivalTime=2.7;
+    cam.dist=Math.min(ZOOM_FAR,cam.tdist+70);cam.pitch=.46;cam.yaw=cam.tyaw-.72;cam.z=cam.tz+32;arrivalTime=2.7;
   }
   dirty=true;tick();if(cont)savedRev=rev;showObj();setTool('select');openCat=null;setCatUI();
   save();}
@@ -1407,7 +1487,7 @@ function syncGestureCamera(){
 function navigate(from,to,space,{scale=1,turn=0,tilt=0}={}){
   const dx=to.x-from.x,dy=to.y-from.y,oldDistance=cam.tdist;
   const hit=groundAt(from,space,gestureBefore);
-  cam.tdist=clamp(oldDistance*scale,14,230);
+  cam.tdist=clamp(oldDistance*scale,ZOOM_NEAR,ZOOM_FAR);
   cam.tyaw+=turn;cam.tpitch=clamp(cam.tpitch+tilt,.35,1.45);
   const units=2*oldDistance*Math.tan(camera.fov*Math.PI/360)/space.height;
   if(hit&&groundAt(to,space,gestureAfter)){
@@ -1565,9 +1645,9 @@ canvas.addEventListener('wheel',e=>{
 /* a página não dá zoom nem escorrega: os menus ficam parados */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
-document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#tray,.hud-res,#cats,.mcard,.modal .panel,#log,#info,#side,.a-step,.rank,.rtree'))e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#tray,.tray-items,.hud-res,#cats,.mcard,.modal .panel,#log,#info,#side,.a-step,.rank,.rtree'))e.preventDefault();},{passive:false});
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(inMenu)return;const k=e.code;if(down?.plot||down?.building){if(k==='Escape'){down=null;setTool('select');}return;}
-  if(k==='Escape'){if(photo)setPhoto(false);else if(!$$('.modal:not(.hide)').every(m=>m.id==='menu')){$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});}else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;select(null);setCatUI();}}
+  if(k==='Escape'){if(reqOpenId!==null)closeRequest();else if(photo)setPhoto(false);else if(!$$('.modal:not(.hide)').every(m=>m.id==='menu')){$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});}else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;select(null);setCatUI();}}
   if(photo)return;
   if((k==='KeyQ'||k==='KeyE')&&tool==='place'){if(align&&B[placeT].cat!=='dec'){setAlign(false);toast('Alinhamento automático desligado (F liga de novo)');}manualRot+=(k==='KeyQ'?1:-1)*TURN;}
   else if(k==='KeyQ')cam.tyaw+=.3;else if(k==='KeyE')cam.tyaw-=.3;
@@ -1616,6 +1696,7 @@ const MAT={
   martelo:{n:'Martelo',t:60,need:{metal:1,tabuas:1},sell:80},trena:{n:'Trena',t:50,need:{plastico:1,metal:1},sell:55}};
 const FACILITY_NEEDS={
   fazenda:[{madeira:25,metal:2},{madeira:45,tabuas:3}],
+  predio:[{metal:4,tabuas:2},{metal:6,tinta:2,martelo:1}],
   fabrica:[{madeira:30,metal:3},{madeira:50,tabuas:3,pregos:2}],
   lojamat:[{madeira:30,pregos:2},{metal:4,tabuas:3,tinta:1}],
   ferramentas:[{madeira:30,metal:3},{pregos:4,tabuas:3,tinta:1}]
@@ -1623,7 +1704,7 @@ const FACILITY_NEEDS={
 const slotsFor=b=>B[b.t].slots+b.grade-1;
 function facilityUpgradeMarkup(b){
   const needs=FACILITY_NEEDS[b.t][b.grade-1];
-  const effect=b.t==='fazenda'?`+${(b.grade-1)*25}% de alimentos`:`${slotsFor(b)} vagas · ${(b.grade-1)*15}% menos tempo por item`;
+  const effect=b.t==='fazenda'?`+${(b.grade-1)*25}% de alimentos`:b.t==='predio'?`${capacityFor(b)} moradores`:`${slotsFor(b)} vagas · ${(b.grade-1)*15}% menos tempo por item`;
   return `<div class="facility-up"><span>Nível ${b.grade} · ${effect}</span>${needs?`<div class="nds">${sand()?'Grátis':needTxt(needs)}</div><button class="btn" id="facilityUp" ${(b.conn||sand())&&(sand()||canPayMaterials(needs))?'':'disabled'}>Evoluir</button>`:''}</div>`;
 }
 function canPayMaterials(needs){return Object.entries(needs).every(([k,q])=>haveM(k)>=q);}
@@ -1636,7 +1717,8 @@ function upgradeFacility(b){
   if(B[b.t].prod)prodUI();else info();
   hud();save();
 }
-const UPG={casa:{to:'sobrado',need:{pregos:1}},sobrado:{to:'vila',need:{pregos:2,tabuas:2}},vila:{to:'predio',need:{pregos:2,tinta:1,martelo:1}}};
+const HOME_LEVEL={casa:1,sobrado:2,vila:3,mansao:4};
+const UPG={casa:{to:'sobrado',need:{pregos:1}},sobrado:{to:'vila',need:{pregos:2,tabuas:2}},vila:{to:'mansao',need:{pregos:2,tinta:1,martelo:1}}};
 const mIco=(k,c='')=>`<svg class="mi ${c}" viewBox="0 0 32 32"><use href="#m-${k}"/></svg>`;
 const haveM=k=>k==='madeira'?Math.floor(S.w):(S.inv[k]||0);
 const stored=()=>Object.values(S.inv).reduce((a,b)=>a+b,0);
@@ -1659,25 +1741,77 @@ function prodTick(){for(const b of buildings){if(!b.q||!b.q.length)continue;whil
 function collect(b){let n=0;while(b.rd.length){if(stored()>=S.cap){toast('Depósito cheio! Venda ou use materiais.');break;}const k=b.rd.shift();S.inv[k]=(S.inv[k]||0)+1;n++;S.collected++;}
   if(n){sfx('pop');gainXP(n*2);flyTo(b,'#bDep',b.lastIcon||'metal');rev++;}prodUI();lvlUI();}
 function collectTax(){const v=Math.floor(S.bank);if(v<1)return;S.m+=v;S.bank-=v;S.taxed=(S.taxed||0)+v;sfx('coin');gainXP(Math.max(1,Math.round(v/60)));const p=buildings.find(b=>b.t==='prefeitura');if(p)flyTo(p,'.money','coin');toast(`+${v} moedas de impostos`);rev++;hud();}
-function houseExpansionError(b){const u=UPG[b.t];return u?plotError(u.to,b.x,b.z,b.a,b):'';}
-function canUpg(b){const u=UPG[b.t];return u&&!houseExpansionError(b)&&(sand()||canPayMaterials(u.need));}
-function upgradeHouse(b){const u=UPG[b.t];if(!u)return;if(!canUpg(b)){toast(houseExpansionError(b)||'Faltam materiais: produza na Fábrica e nas Lojas');return;}if(!sand())takeM(u.need);
-  const o={id:b.id,t:u.to,x:b.x,z:b.z,a:b.a,res:b.res,fam:b.fam,color:b.color,seed:b.seed,anim:true};removeBuilding(b);const nb=addBuilding(o);S.upg++;gainXP(15);sfx('build');
-  toast(`${B[o.t].n}! Mais moradores e mais impostos`);log(`Uma casa virou <b>${B[o.t].n}</b>.`);recompute();select(nb);hud();lvlUI();}
-/* bolhas sobre as construções: produto pronto, impostos e casas que podem melhorar */
+function canUpg(b){
+  const u=UPG[b.t];
+  return !!u&&(sand()||canPayMaterials(u.need));
+}
+function upgradeHouse(b){
+  const u=b&&UPG[b.t];
+  if(!u)return;
+  if(!canUpg(b)){toast('Faltam materiais para evoluir.');return;}
+  if(!sand())takeM(u.need);
+  b.t=u.to;recolor(b,b.color);popIn(b);
+  S.upg++;gainXP(15);sfx('build');
+  toast(`Casa evoluída para ${B[b.t].n}`);
+  recompute();select(b);hud();save();
+}
+/* ---------- floating building actions ---------- */
 const bubEls=new Map(),_bv=new THREE.Vector3();
-function bubbles(){const host=$('#bub');if(!S||inMenu||photo){host.classList.add('hide');return;}host.classList.remove('hide');const want=new Map(),W=canvas.clientWidth,H=canvas.clientHeight;
-  let nUp=0;for(const b of buildings){let k=null,html='';
-    if(b.rd&&b.rd.length){k='p'+b.id;b.lastIcon=b.rd[0];html=mIco(b.rd[0])+(b.rd.length>1?`<i>${b.rd.length}</i>`:'');}
-    else if(b.t==='prefeitura'&&S.bank>=1){k='t';html=mIco('coin')+`<i>${Math.floor(S.bank)}</i>`;}
-    else if(UPG[b.t]&&b.res>=B[b.t].cap*.7&&canUpg(b)&&nUp<3){k='u'+b.id;html=mIco('up');nUp++;}
-    if(!k)continue;_bv.set(b.x,(b.obj.userData.h||5)+1.6,b.z).project(camera);if(_bv.z>1||Math.abs(_bv.x)>1.1||Math.abs(_bv.y)>1.1)continue;
-    want.set(k,{b,html,x:(_bv.x+1)/2*W,y:(1-_bv.y)/2*H});}
-  for(const [k,el] of bubEls)if(!want.has(k)){el.remove();bubEls.delete(k);}
-  for(const [k,o] of want){let el=bubEls.get(k);if(!el){el=document.createElement('button');el.className='bb '+k[0];el.dataset.k=k;el.innerHTML=o.html;host.appendChild(el);bubEls.set(k,el);el._b=o.b;}
-    else if(el._h!==o.html){el.innerHTML=o.html;}el._h=o.html;el._b=o.b;el.style.transform=`translate(${o.x-26}px,${o.y-60}px)`;}}
-$('#bub').addEventListener('pointerdown',e=>{const el=e.target.closest('.bb');if(!el)return;e.stopPropagation();const b=el._b,k=el.dataset.k;
-  if(k[0]==='p')collect(b);else if(k==='t')collectTax();else if(k[0]==='u'){select(b);}});
+function bubbles(){
+  const host=$('#bub'),card=$('#reqPop');
+  if(!S||inMenu||photo){host.classList.add('hide');closeRequest();return;}
+  host.classList.remove('hide');
+  const want=new Map(),W=canvas.clientWidth,H=canvas.clientHeight;
+  let nUp=0;
+  for(const b of buildings){
+    let key,html,label;
+    if(b.rd.length){
+      key='p'+b.id;b.lastIcon=b.rd[0];html=mIco(b.rd[0]);label=`Coletar ${b.rd.length} em ${B[b.t].n}`;
+    }else if(b.t==='prefeitura'&&S.bank>=1){
+      key='t';html=mIco('coin');label=`Coletar ${Math.floor(S.bank)} moedas`;
+    }else if(S.req?.id===b.id){
+      key='r'+b.id;
+      const detail=RESIDENT_REQUESTS[S.req.kind];
+      html=`<svg class="mi" viewBox="0 0 24 24" style="--c:${detail.color}" aria-hidden="true"><use href="#${detail.icon}"/></svg>`;
+      label='Pedido de morador · '+detail.title;
+    }else if(UPG[b.t]&&(inTut()?b.res>=3:b.res>=capacityFor(b)*.7)&&canUpg(b)&&nUp<3){
+      key='u'+b.id;html=mIco('up');label='Evoluir '+B[b.t].n;nUp++;
+    }
+    if(!key)continue;
+    _bv.set(b.x,(b.obj.userData.h||5)+1.5,b.z).project(camera);
+    if(_bv.z>1||Math.abs(_bv.x)>1.08||Math.abs(_bv.y)>1.08)continue;
+    want.set(key,{b,html,label,x:(_bv.x+1)/2*W,y:(1-_bv.y)/2*H});
+  }
+  for(const [key,el] of bubEls)if(!want.has(key)){el.remove();bubEls.delete(key);}
+  for(const [key,o] of want){
+    let el=bubEls.get(key);
+    if(!el){
+      el=document.createElement('button');el.type='button';el.className='bb '+key[0];el.dataset.k=key;
+      host.appendChild(el);bubEls.set(key,el);
+    }
+    if(el._h!==o.html){el.innerHTML=o.html;el._h=o.html;}
+    if(el._label!==o.label){el.setAttribute('aria-label',o.label);el._label=o.label;}
+    if(key[0]==='r')el.setAttribute('aria-expanded',String(reqOpenId===o.b.id));
+    el._b=o.b;el.style.transform=`translate(${o.x-20}px,${o.y-33}px)`;
+  }
+  if(reqOpenId!==null){
+    const marker=want.get('r'+reqOpenId);
+    if(!marker){closeRequest();return;}
+    const width=card.offsetWidth,height=card.offsetHeight;
+    const x=clamp(marker.x-width/2,9,Math.max(9,W-width-9));
+    const above=marker.y-height-38;
+    const y=clamp(above<48?marker.y+9:above,48,Math.max(48,H-height-10));
+    card.style.transform=`translate(${x}px,${y}px)`;
+  }
+}
+fastTap($('#bub'),t=>{
+  const el=t.closest('.bb');if(!el)return;
+  const b=el._b,key=el.dataset.k;
+  if(key==='t')collectTax();
+  else if(key[0]==='p')collect(b);
+  else if(key[0]==='u')select(b);
+  else if(key[0]==='r')showRequest(b);
+});
 function flyTo(b,target,icon){const t=$(target);if(!t)return;_bv.set(b.x,(b.obj.userData.h||5)+1.6,b.z).project(camera);const W=canvas.clientWidth,H=canvas.clientHeight,x=(_bv.x+1)/2*W,y=(1-_bv.y)/2*H;
   const r=toApp(t.getBoundingClientRect()),f=document.createElement('div');f.className='fly';f.innerHTML=mIco(icon);f.style.transform=`translate(${x-20}px,${y-20}px)`;$('#bub').appendChild(f);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.transform=`translate(${r.left+r.width/2-20}px,${r.top+r.height/2-20}px) scale(.6)`;f.style.opacity='.2';}));setTimeout(()=>{f.remove();t.classList.remove('bump');void t.offsetWidth;t.classList.add('bump');},720);}
@@ -1798,7 +1932,6 @@ function frame(now){const rdt=clamp((now-last)/1000,0,.1);last=Math.max(last,now
     acc+=rdt*sp;while(acc>=1){acc-=1;S.time+=1;tick();}saveT+=rdt;if(saveT>5){saveT=0;save();}}
   updateFlights(rdt*(inMenu?1:photo?0:Math.min(S.speed,2)));updateCam(rdt);camera.updateMatrixWorld();updateSeason(rdt,inMenu?0:photo?0:S.speed);applyLight(S.tod);const wsp=inMenu?1:photo?0:Math.min(S.speed,2);stepLife(rdt*wsp,T);
   for(const b of buildings)if(b.obj.userData.stream){const offset=(flightTime*1.6+b.id*.27)%.55;b.obj.userData.stream.position.set(0,-offset,offset*.35);}else if(b.obj.userData.spin)b.obj.userData.spin.rotation.z+=rdt*(b.obj.userData.spinRate||.6)*(inMenu?1:Math.max(.15,Math.min(S.speed,2)));
-  if(reqMark&&S.req){const h=buildings.find(x=>x.id===S.req.id);if(h){reqMark.position.set(h.x,(h.obj.userData.h||6)+2.2+Math.sin(T*3)*.4,h.z);reqMark.rotation.y=T*2;}}
   updateFX(rdt,inMenu?1:photo?0:S.speed);previewFrame();bubbles();renderer.render(scene,camera);requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 addEventListener('beforeunload',save);
@@ -2107,7 +2240,7 @@ let guideObj=null;
 function roadGuide(on){if(guideObj){scene.remove(guideObj);guideObj=null;}if(!on)return;const g=new THREE.Group(),m=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.85,depthWrite:false});
   const dx=RT.b.x-RT.a.x,dz=RT.b.z-RT.a.z,L=Math.hypot(dx,dz),a=Math.atan2(dx,dz);for(let d=2;d<L-2;d+=2.4){const s=new THREE.Mesh(new THREE.BoxGeometry(.5,.08,1.3),m);s.position.set(RT.a.x+dx*d/L,.25,RT.a.z+dz*d/L);s.rotation.y=a;g.add(s);}
   const disc=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,.12,32),new THREE.MeshBasicMaterial({color:'#39d36b',transparent:true,opacity:.85}));disc.position.set(RT.b.x,.2,RT.b.z);g.add(disc);g.userData.disc=disc;scene.add(g);guideObj=g;}
-function flyCam(x,z,d,p){if(ptrs.size)return;cam.tx=x;cam.tz=z;if(d)cam.tdist=d;if(p)cam.tpitch=p;}
+function flyCam(x,z,d,p){if(ptrs.size)return;cam.tx=x;cam.tz=z;if(d)cam.tdist=clamp(d,ZOOM_NEAR,ZOOM_FAR);if(p)cam.tpitch=p;}
 const TUT=[
   {t:'Olá, prefeito(a)! Eu sou a Lia, urbanista de Vice City. A cidade já tem avenidas, prédios e moradores. Vou te ensinar a fazê-la crescer.',btn:'Vamos lá',enter:()=>flyCam(14,-8,92,.78)},
   {t:'Primeiro, uma rua nova. Toque em Ruas.',el:'[data-c=rua]',ok:()=>tool==='road'},
@@ -2127,7 +2260,7 @@ const TUT=[
   {t:'Toque na Loja e faça Pregos. Cada prego usa 2 metais.',enter:()=>{setTool('select');openCat=null;setCatUI();const l=firstOf('lojamat');if(l)flyCam(l.x,l.z+4,48,.85);},
     el:()=>sel&&sel.t==='lojamat'?'.pc[data-p=pregos]':null,w:()=>{if(sel&&sel.t==='lojamat')return null;const l=firstOf('lojamat');return l&&{x:l.x,z:l.z,y:3,r:3.5};},ok:()=>mCount('pregos')>=1},
   {t:'Toque nos pregos, para coletá-los!',el:'.bb.p,#pCol',ok:()=>(S.inv.pregos||0)>=1},
-  {t:'Use os pregos para melhorar uma Casinha: toque na seta verde sobre uma casa e depois em Melhorar.',enter:()=>{select(null);tb().upg=S.upg;const h=buildings.find(b=>b.t==='casa'&&b.res>=3&&!houseExpansionError(b));if(h)flyCam(h.x,h.z+4,58,.85);},
+  {t:'Use os pregos para melhorar uma Casinha: toque na seta verde sobre uma casa e depois em Melhorar.',enter:()=>{select(null);tb().upg=S.upg;const h=buildings.find(b=>b.t==='casa'&&b.res>=3);if(h)flyCam(h.x,h.z+4,58,.85);},
     el:()=>$('#iUpg')&&!$('#info').classList.contains('hide')?'#iUpg':'.bb.u',ok:()=>S.upg>tb().upg},
   {t:'Excelente! Agora você sabe tudo: colete impostos, produza materiais, melhore casas e venda o que sobrar no Depósito. Siga as missões. A cidade é sua!',btn:'Começar'}];
 let tutStep=-1;const _tv=new THREE.Vector3();

@@ -44,8 +44,6 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .item img{width:84px;height:84px;display:block;margin:0 auto}
 .item b{display:block;font-size:13px;line-height:1.2;margin-top:2px}
 .item small{display:block;color:var(--mute);font-size:12px}
-.item.lock{opacity:.55}
-.item.lock::after{content:attr(data-lock);position:absolute;left:6px;right:6px;top:34px;background:rgba(10,24,30,.92);border-radius:8px;font-size:12px;padding:4px;color:var(--sun)}
 #cats{display:flex;gap:4px;padding:5px;flex-wrap:wrap;justify-content:center}
 .cat{height:44px;padding:0 16px;border-radius:10px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
 .cat svg{width:20px;height:20px}
@@ -337,7 +335,6 @@ button:active{transform:scale(.93)}
 .item.on{border-color:#fff;background:rgba(255,255,255,.28);box-shadow:0 0 0 3px rgba(255,255,255,.25)}
 .item img{filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
 .item small{color:var(--mute)}
-.item.lock::after{background:rgba(20,26,34,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#ffd36b;border:1px solid rgba(255,255,255,.15)}
 /* painéis laterais e info */
 #side .panel,#info{border-radius:22px}
 #side h3{color:#fff;font-size:15px}
@@ -539,10 +536,6 @@ input,select,textarea{font-size:16px}
 html.trayon #cats,html.prodon #cats{display:none!important}
 #tray{position:fixed;left:max(10px,var(--sal));right:max(10px,var(--sar));bottom:calc(max(10px,var(--sab)) - var(--gap,0px));gap:10px!important;padding:12px 12px 12px!important;border-radius:24px!important;z-index:7;overflow-x:auto;scrollbar-width:none}
 #tray::-webkit-scrollbar{display:none}
-#tray .item{flex:0 0 132px;width:132px;padding:4px 6px 10px;border-radius:18px}
-#tray .item img{width:100px;height:100px;margin-top:-6px}
-#tray .item small{font-size:11.5px}
-.trayx{position:sticky;right:0;flex:0 0 44px;width:44px;height:44px;align-self:center;border-radius:50%;border:0;background:#fff;color:#4a5560;font-size:26px;line-height:44px;padding:0;box-shadow:0 4px 12px rgba(0,0,0,.25);text-shadow:none;z-index:2}
 /* barra de produção */
 #prod{position:fixed;left:max(10px,var(--sal));right:max(10px,var(--sar));bottom:calc(max(10px,var(--sab)) - var(--gap,0px));z-index:8;padding:10px 12px 12px;border-radius:24px!important;animation:popIn .4s var(--spring)}
 #prod.hide{display:none}
@@ -563,12 +556,8 @@ html.trayon #cats,html.prodon #cats{display:none!important}
 /* bolhas sobre os prédios */
 #bub{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}#bub.hide{display:none}
 #bub .bb{position:absolute;left:0;top:0;width:52px;height:58px;border:0;padding:0;pointer-events:auto;background:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));will-change:transform}
-#bub .bb::before{content:"";position:absolute;left:0;top:0;width:52px;height:52px;border-radius:50%;background:#fff}
-#bub .bb::after{content:"";position:absolute;left:20px;top:42px;width:12px;height:12px;background:#fff;transform:rotate(45deg)}
 #bub .bb .mi{position:absolute;left:9px;top:9px;width:34px;height:34px;z-index:1;animation:bob 1.6s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-3px)}}
-#bub .bb i{position:absolute;right:-6px;top:-4px;z-index:2;min-width:20px;height:20px;border-radius:10px;background:#e8465f;color:#fff;font:700 11px/20px var(--ui);font-style:normal;padding:0 5px;text-align:center}
-#bub .bb.u::before{background:#effff3}
 .fly{position:absolute;left:0;top:0;width:40px;height:40px;transition:transform .7s cubic-bezier(.5,-.25,.6,1),opacity .7s;z-index:3;pointer-events:none}.fly .mi{width:40px;height:40px}
 .mi{display:inline-block;vertical-align:middle}
 /* depósito e moedas */
@@ -594,7 +583,6 @@ html.tuton #hl{animation:hlPulse2 1.3s ease-in-out infinite}
 :where(html.lc) .pill{height:26px;font-size:12.5px;padding:0 9px 0 8px}:where(html.lc) .tlp .pill{height:22px;padding-left:22px}:where(html.lc) .tc .pill{font-size:11px}
 :where(html.lc) #lcol{top:calc(max(6px,var(--sat)) + 58px)}:where(html.lc) .stat{font-size:11px;padding:5px 7px}
 :where(html.lc) #cats{grid-template-columns:repeat(3,52px)}:where(html.lc) #cats .cat{width:52px;height:44px;font-size:8.5px}:where(html.lc) #cats .cat svg{width:18px;height:18px}
-:where(html.lc) #tray .item{flex-basis:112px;width:112px}:where(html.lc) #tray .item img{width:78px;height:78px}:where(html.lc) #tray{padding:8px!important}
 :where(html.lc) .slot{width:54px;height:70px}:where(html.lc) .pc{width:98px;padding:6px 4px}:where(html.lc) .pc .big{width:34px;height:34px}:where(html.lc) #prod{padding:8px 10px}
 :where(html.lc) #guide .lia{width:96px!important;height:120px!important}:where(html.lc) #guide .gbub{margin-bottom:52px!important;padding:10px 12px 9px!important}:where(html.lc) #guide .gbub p{font-size:13.5px!important}
 :where(html.lc.trayon) #guide,:where(html.lc.prodon) #guide{bottom:120px}
@@ -620,7 +608,6 @@ html.infoon #side,html.infoon #cats{display:none!important}
 #arrival.ready{opacity:0;pointer-events:none}
 #menu .mcard{width:min(340px,87%);max-height:85%;overflow:auto;padding:14px 17px}
 #menu .menulogo{max-height:48px;width:auto}#menu .mrow{min-height:36px;padding-block:4px}
-#tray .item{width:86px;flex-basis:86px}#tray .item img{width:54px;height:54px}
 #cats{grid-template-columns:repeat(3,46px)}#cats .cat{width:46px;height:42px;font-size:8px}
 #info{max-width:min(230px,72%)}
 #prod,.modal>.panel{max-height:78%;overflow:auto}
@@ -654,3 +641,33 @@ html.infoon #side,html.infoon #cats{display:none!important}
 }
 
 #pMove{min-height:32px;height:auto;padding:5px 10px;flex:none}
+
+/* Catálogo compacto com trilho de itens e botão de fechar independente. */
+#tray{left:auto;right:max(8px,var(--sar));max-width:min(calc(100% - 22px),660px);gap:4px!important;padding:5px!important;overflow:visible;border-radius:15px!important}
+#tray .tray-items{display:flex;gap:4px;overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none;min-width:0}
+.tray-items::-webkit-scrollbar{display:none}
+#tray .item{flex:0 0 70px;width:70px;min-height:68px;display:grid;grid-template-rows:32px 1fr 12px;justify-items:center;align-items:center;gap:2px;padding:3px 2px 4px;border-radius:9px}
+#tray .item img{width:37px;height:37px;margin:0;object-fit:contain}
+#tray .item b{margin:0;max-width:100%;font-size:9px;line-height:1;overflow-wrap:break-word;text-align:center}
+#tray .item small{display:flex;align-items:center;justify-content:center;gap:4px;font-size:9px;white-space:nowrap}
+#tray .item small span{display:inline-flex;align-items:center;gap:1px}
+#tray .item small svg{width:9px;height:9px;color:#f9d185}
+#tray .item small span:nth-child(2) svg{color:#d6a377}
+#tray .trayx{position:static;flex:0 0 34px;width:34px;height:34px;align-self:center;border-radius:9px;font:600 22px/34px var(--ui);box-shadow:none;color:#fff;background:#ffffff23}
+@media(max-height:465px),(max-width:560px){
+  #tray .item{flex-basis:62px;width:62px;min-height:62px;grid-template-rows:28px 1fr 11px}
+  #tray .item img{width:31px;height:31px}
+}
+
+/* Ícones flutuantes sem caixa, com área de toque maior que o desenho. */
+#bub .bb{width:40px;height:40px;display:grid;place-items:center;border-radius:9px;filter:none;box-shadow:none}
+#bub .bb .mi{position:static;width:23px;height:23px;animation:none;filter:drop-shadow(0 1px 2px #08181eb3)}
+#bub .bb.r .mi{width:19px;height:19px;animation:bob 2.45s ease-in-out infinite}
+#bub .bb:focus-visible,#tray button:focus-visible{outline:2px solid #ffe0a1;outline-offset:-1px}
+#reqPop{position:absolute;left:0;top:0;width:min(190px,calc(100% - 18px));pointer-events:auto;z-index:3}
+.req-card{display:grid;grid-template-columns:1fr 28px;align-items:center;gap:3px 5px;padding:8px 8px 9px 11px;color:#fff3d8;background:#183338f2;border:1px solid #d7ede34a;border-radius:12px;box-shadow:0 5px 17px #0b171a80;animation:request-in .2s ease-out both}
+.req-card strong{font:750 12px/1.2 var(--ui);padding-top:1px}
+.req-card p{grid-column:1/-1;margin:0;color:#d6e8e4;font:500 11px/1.3 var(--ui)}
+#reqDismiss{width:28px;height:28px;padding:0;border:0;border-radius:7px;background:#ffffff15;color:#fff;font-size:18px;line-height:28px}
+@keyframes request-in{from{opacity:0;transform:translateY(4px) scale(.97)}}
+@media(prefers-reduced-motion:reduce){#bub .bb.r .mi,.req-card{animation:none}}
