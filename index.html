@@ -299,6 +299,13 @@
 </div></div>
 
 </div>
+<script>
+document.getElementById('c').addEventListener('webglcontextcreationerror', function () {
+  const status = document.querySelector('.arrival-status');
+  status.querySelector('span').textContent = 'Para abrir a cidade em 3D, ative a aceleração gráfica ou use um navegador com WebGL.';
+  status.querySelector('progress')?.remove();
+});
+</script>
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/supabase.js"></script>
 <script src="/config.js?v=16"></script>
