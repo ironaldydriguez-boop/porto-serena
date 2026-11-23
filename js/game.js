@@ -857,9 +857,15 @@ function dropPlotGhost(){
   if(ghost){scene.remove(ghost);ghost.traverse(m=>m.geometry?.dispose());ghost=null;}
   plotGrid.visible=false;
 }
-function cancelPlotMove(){
-  if(!movingPlot)return;
-  movingPlot=null;dropPlotGhost();
+function startPlotMove(){
+  if(!sel||inMenu||photo)return;
+  const target=sel;
+  openCat=null;setTool('move');select(null);
+  movingPlot=target;selRing.visible=true;ctxBar();canvas.focus();
+}
+function clearMovePreview(){
+  if(tool!=='move')return;
+  dropPlotGhost();ring.visible=false;
 }
 function freezeCamera(){
   arrivalTime=0;
@@ -877,7 +883,7 @@ function movePlot(b,gp){
 const hoverRing=new THREE.Mesh(new THREE.RingGeometry(.88,1,48),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.45,depthWrite:false}));hoverRing.rotation.x=-Math.PI/2;hoverRing.position.y=.13;hoverRing.visible=false;scene.add(hoverRing);const ring=new THREE.Mesh(new THREE.RingGeometry(.92,1,72),new THREE.MeshBasicMaterial({color:'#ffe08a',transparent:true,opacity:.55,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.12;ring.visible=false;scene.add(ring);
 const selRing=new THREE.Mesh(new THREE.RingGeometry(.85,1,48),new THREE.MeshBasicMaterial({color:'#f4c95d',transparent:true,opacity:.9,depthWrite:false}));selRing.rotation.x=-Math.PI/2;selRing.position.y=.14;selRing.visible=false;scene.add(selRing);
 let roadPrev=null;
-function setTool(t){tool=t;cancelPlotMove();dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
+function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}tool=t;movingPlot=null;dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
   if(t==='place'){ghost=createPlotGhost(placeT);manualRot=0;}
   if(t!=='place')placeT=null;$('#tip').classList.add('hide');setCatUI();}
 function plotError(t,x,z,a,existing){
@@ -959,7 +965,7 @@ function select(b){sel=b;selRing.visible=!!b;document.documentElement.classList.
 let lastInfo='';
 function info(){if(!sel)return;const b=sel,d=B[b.t];let h=`<h2>${d.n}</h2><div class="sub">${d.d||'Decoração: deixa a vizinhança mais bonita.'}</div>`;
   if(b.t==='fazenda')h+=facilityUpgradeMarkup(b);
-  if(UPG[b.t]){const u=UPG[b.t];h+=`<div class="upg"><div class="sub">Melhorar para <b>${B[u.to].n}</b> · até ${B[u.to].cap} moradores</div><div class="nds">${sand()?'Grátis':needTxt(u.need)}</div>${houseExpansionError(b)?'<p class="sub">Arraste a casa para um lote maior.</p>':''}<button class="btn pri" id="iUpg" ${canUpg(b)?'':'disabled'}>Melhorar</button></div>`;}
+  if(UPG[b.t]){const u=UPG[b.t];h+=`<div class="upg"><div class="sub">Melhorar para <b>${B[u.to].n}</b> · até ${B[u.to].cap} moradores</div><div class="nds">${sand()?'Grátis':needTxt(u.need)}</div>${houseExpansionError(b)?'<p class="sub">Use Mover para escolher um lote maior.</p>':''}<button class="btn pri" id="iUpg" ${canUpg(b)?'':'disabled'}>Melhorar</button></div>`;}
   if(d.cat!=='dec'&&!b.conn)h+=`<div class="need" style="color:var(--bad)"><i style="background:var(--bad)"></i>Sem rua por perto: não funciona</div>`;
   if(d.cap){h+=`<div class="row"><span>Classe</span><span>${TIERS[d.tier]}</span></div><div class="row"><span>Família</span><span>${b.fam?b.fam:'Ninguém ainda'}</span></div><div class="row"><span>Moradores</span><span>${b.res} / ${d.cap}</span></div>`;
     h+=`<div class="row"><span>Felicidade</span><span>${b.hap}%</span></div><div class="bar"><div style="width:${b.hap}%;background:${b.hap<35?'var(--bad)':b.hap<60?'var(--sun)':'var(--ok)'}"></div></div>`;
@@ -968,8 +974,8 @@ function info(){if(!sel)return;const b=sel,d=B[b.t];let h=`<h2>${d.n}</h2><div c
   if(d.jobs)h+=`<div class="row"><span>Vagas de trabalho</span><span>${d.jobs}</span></div><div class="row"><span>Equipe da vila</span><span>${Math.round(S.staff*100)}%</span></div>`;
   if(d.rad)h+=`<div class="row"><span>Raio de alcance</span><span>${d.rad}</span></div>`;
   if(d.paint)h+=`<div class="sub" style="margin:10px 0 0">Cor da fachada</div><div class="sw">${WALLS.map(c=>`<button style="background:${c}" data-col="${c}" aria-label="Cor ${c}"></button>`).join('')}</div>`;
-  h+=`<div class="btnrow"><button class="btn warn" id="iDem">Demolir (+50%)</button><button class="btn" id="iClose">Fechar</button></div>`;if(h===lastInfo&&$('#info').innerHTML)return;lastInfo=h;$('#info').innerHTML=h;}
-$('#info').addEventListener('click',e=>{if(e.target.dataset.col){recolor(sel,e.target.dataset.col);return;}if(e.target.id==='iDem'){demolish(sel);}if(e.target.id==='facilityUp'){upgradeFacility(sel);return;}if(e.target.id==='iUpg'){upgradeHouse(sel);return;}if(e.target.id==='iTax'){collectTax();info();return;}if(e.target.id==='iClose')select(null);});
+  h+=`<div class="btnrow"><button class="btn pri" id="iMove">Mover</button><button class="btn warn" id="iDem">Demolir (+50%)</button><button class="btn" id="iClose">Fechar</button></div>`;if(h===lastInfo&&$('#info').innerHTML)return;lastInfo=h;$('#info').innerHTML=h;}
+$('#info').addEventListener('click',e=>{if(e.target.dataset.col){recolor(sel,e.target.dataset.col);return;}if(e.target.id==='iMove'){startPlotMove();return;}if(e.target.id==='iDem'){demolish(sel);}if(e.target.id==='facilityUp'){upgradeFacility(sel);return;}if(e.target.id==='iUpg'){upgradeHouse(sel);return;}if(e.target.id==='iTax'){collectTax();info();return;}if(e.target.id==='iClose')select(null);});
 function demolish(b){if(!b)return;sfx('demolish');dust(b.x,b.z,b.r,16);pay(B[b.t].cost,-.5);log(`${B[b.t].n} demolido(a).`);removeBuilding(b);recompute();hud();}
 
 /* ---------- requests ---------- */
@@ -1054,7 +1060,7 @@ const KEY='porto-serena-save-v1';
 function snapshot(){return {v:2,ts:localTs,dev:DEV,owner:user?user.id:null,city:cityName,S:{...S,done:[...S.done],req:null},b:buildings.map(b=>({id:b.id,t:b.t,x:b.x,z:b.z,a:b.a,seed:b.seed,color:b.color,grade:b.grade,res:b.res,fam:b.fam,q:b.q,rd:b.rd})),r:roads.map(r=>r.pts),gridRoads:roads.map(r=>r.orthogonal),cam:{x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist}};}
 function save(){if(!S||inMenu||rev===savedRev)return;localTs=Date.now();savedRev=rev;try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){}}
 function hasSave(){try{return !!localStorage.getItem(KEY);}catch(e){return false;}}
-function clearWorld(){graphDirty=true;while(junctionG.children.length)junctionG.remove(junctionG.children[0]);for(const b of buildings.slice())scene.remove(b.obj);buildings=[];for(const r of roads)scene.remove(r.obj);roads=[];clearLife();
+function clearWorld(){if(tool==='move')setTool('select');graphDirty=true;while(junctionG.children.length)junctionG.remove(junctionG.children[0]);for(const b of buildings.slice())scene.remove(b.obj);buildings=[];for(const r of roads)scene.remove(r.obj);roads=[];clearLife();
   for(const t of wild)if(!t.alive){t.alive=true;wildMesh[t.k].setMatrixAt(t.i,t.matrix);wildMesh[t.k].instanceMatrix.needsUpdate=true;}
   if(reqMark){scene.remove(reqMark);reqMark=null;}select(null);logs.length=0;$('#log').innerHTML='';}
 function load(obj){try{const o=obj||JSON.parse(localStorage.getItem(KEY));if(o.city)cityName=o.city;clearWorld();S=Object.assign(freshState(o.S.mode),o.S,{done:new Set(o.S.done),req:null});S.inv=S.inv||{};
@@ -1152,14 +1158,15 @@ function snapCam(){cam.x=cam.tx;cam.z=cam.tz;cam.yaw=cam.tyaw;cam.pitch=cam.tpit
 function anchored(ox,oy,nx,ny,change){const P=groundAt(ox,oy,tgt());change();const Q=groundAt(nx,ny,tgt());
   if(P&&Q){cam.tx=clamp(cam.tx+P.x-Q.x,-MAPB,MAPB);cam.tz=clamp(cam.tz+P.z-Q.z,-MAPB,MAPB);}snapCam();}
 canvas.addEventListener('pointerdown',e=>{arrivalTime=0;canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:AX(e),y:AY(e)});try{canvas.setPointerCapture(e.pointerId);}catch(_){}
-  if(ptrs.size===2){if(down?.plot||movingPlot){cancelPlotMove();down=null;return;}const p=pinchInfo();pinch={...p,d0:p.d,a0:p.ang,x0:p.cx,y0:p.cy,mode:null};if(drawing)cancelDraw();if(down)down.moved=true;return;}if(ptrs.size>2)return;
+  if(ptrs.size===2){if(down?.plot||down?.building){clearMovePreview();down=null;return;}const p=pinchInfo();pinch={...p,d0:p.d,a0:p.ang,x0:p.cx,y0:p.cy,mode:null};if(drawing)cancelDraw();if(down)down.moved=true;return;}if(ptrs.size>2)return;
   setMouse(e);down={b:e.button,x:AX(e),y:AY(e),moved:false,touch:touchMode};
   if(e.button===0&&!inMenu&&!photo){
     const gp=groundPt();
     if(tool==='place'&&gp){down.plot=true;freezeCamera();}
-    if(tool==='select'&&gp){
-      const building=pickB();
-      if(building){down.building=building;down.offset={x:building.x-gp.x,z:building.z-gp.z};freezeCamera();}
+    if(tool==='move'&&gp&&movingPlot&&pickB()===movingPlot){
+      down.building=movingPlot;
+      down.offset={x:movingPlot.x-gp.x,z:movingPlot.z-gp.z};
+      freezeCamera();
     }
   }
   if(tool==='road'&&e.button===0&&!inMenu&&!photo){const gp=groundPt();if(gp){down.road=true;down.startPt=snapPt(gp);down.before=roadPts.length;}}});
@@ -1174,8 +1181,8 @@ canvas.addEventListener('pointermove',e=>{const pp=ptrs.get(e.pointerId);if(pp){
   const dx=AX(e)-mx,dy=AY(e)-my;setMouse(e);
   if(!down)return;if(Math.hypot(AX(e)-down.x,AY(e)-down.y)>(down.touch?10:5))down.moved=true;if(!down.moved)return;
   if(down.plot&&tool==='place')return;
-  if(down.building&&tool==='select'){
-    if(!movingPlot){movingPlot=down.building;ghost=createPlotGhost(movingPlot.t,movingPlot);}
+  if(down.building&&tool==='move'){
+    if(!ghost)ghost=createPlotGhost(movingPlot.t,movingPlot);
     return;
   }
   if(down.road&&tool==='road'){drawRoadMove();return;}
@@ -1187,13 +1194,14 @@ function drawRoadMove(){if(!groundPt())return;
 }
 function cancelDraw(){drawing=false;if(down&&down.road)roadPts.length=down.before;}
 function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;}
-canvas.addEventListener('pointercancel',e=>{endPtr(e);if(drawing)cancelDraw();cancelPlotMove();down=null;drawing=false;});
+canvas.addEventListener('pointercancel',e=>{endPtr(e);if(drawing)cancelDraw();clearMovePreview();down=null;drawing=false;});
 canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;const d=down;down=null;
   if(drawing){drawing=false;setMouse(e);const gp=groundPt();if(gp){const p=snapPt(gp),l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.2)roadPts.push(p);}if(roadPts.length>=2)finishRoad();return;}
   setMouse(e);const gp=groundPt();
-  if(movingPlot){
-    const b=movingPlot;cancelPlotMove();
-    if(gp&&buildings.includes(b))movePlot(b,{x:gp.x+d.offset.x,z:gp.z+d.offset.z});
+  if(tool==='move'){
+    clearMovePreview();
+    if(d.building===movingPlot&&d.moved&&gp&&buildings.includes(movingPlot)&&
+      movePlot(movingPlot,{x:gp.x+d.offset.x,z:gp.z+d.offset.z}))setTool('select');
     return;
   }
   if(inMenu||photo)return;
@@ -1205,7 +1213,7 @@ canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;con
   else if(tool==='road'&&gp){if(dbl&&roadPts.length>=2&&!d.touch){finishRoad();return;}const p=snapPt(gp);const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.5){roadPts.push(p);sfx('tick');}}
   else if(tool==='demolish'){const b=pickB();if(b)demolish(b);else if(gp){const n=nearestRoad(gp.x,gp.z);if(n&&n.d<1.8){if(!sand())S.m+=Math.floor(n.r.len*.6);sfx('demolish');removeRoad(n.r);recompute();log('Rua removida.');hud();}}}
   else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}});
-canvas.addEventListener('wheel',e=>{e.preventDefault();if(down?.plot||down?.building||movingPlot)return;const dy=e.deltaMode===1?e.deltaY*16:e.deltaY,f=Math.exp(clamp(dy,-120,120)*.0018);anchored(AX(e),AY(e),AX(e),AY(e),()=>{cam.tdist=clamp(cam.tdist*f,14,230);});},{passive:false});
+canvas.addEventListener('wheel',e=>{e.preventDefault();if(down?.plot||down?.building)return;const dy=e.deltaMode===1?e.deltaY*16:e.deltaY,f=Math.exp(clamp(dy,-120,120)*.0018);anchored(AX(e),AY(e),AX(e),AY(e),()=>{cam.tdist=clamp(cam.tdist*f,14,230);});},{passive:false});
 /* a página não dá zoom nem escorrega: os menus ficam parados */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
@@ -1233,7 +1241,7 @@ function previewFrame(){const tip=$('#tip');ctxBar();plotGrid.visible=false;if(i
     ghost.position.set(p.x,0,p.z);ghost.rotation.y=p.a;ghostMat.emissive.set(p.bad?'#8b1e1e':p.warn?'#7a5c10':'#1f6b33');
     ring.visible=!!d.rad;if(d.rad){ring.scale.setScalar(d.rad);ring.position.x=p.x;ring.position.z=p.z;}
     const cov=d.cap?'<br>'+NEEDS[d.tier].map(n=>{const ok=n==='comida'?(S.f>.5||sand()):buildings.some(s=>B[s.t].serv===n&&s.conn&&Math.hypot(s.x-p.x,s.z-p.z)<=B[s.t].rad);return `<span style="color:${ok?'var(--ok)':'var(--bad)'}">${ok?'✓':'✗'} ${NEEDN[n]}</span>`;}).join(' · '):'';
-    html=`<b>${d.n}</b><br>${movingPlot?'Solte para mover':sand()?'grátis':costTxt(d.cost)}${cov}${p.bad?`<br><span class="bad">${p.bad}</span>`:p.warn?`<br><span class="warn">${p.warn}</span>`:''}<br><small>Q/E gira · F alinha à rua · Esc sai</small>`;}
+    html=`<b>${d.n}</b><br>${movingPlot?'Solte para mover':sand()?'grátis':costTxt(d.cost)}${cov}${p.bad?`<br><span class="bad">${p.bad}</span>`:p.warn?`<br><span class="warn">${p.warn}</span>`:''}${movingPlot?'':'<br><small>Q/E gira · F alinha à rua · Esc sai</small>'}`;}
   else if(tool==='road'&&gp){
     const point=snapPt(gp),pts=[...roadPts,point],key=pts.map(p=>p.x+','+p.z).join(';');
     plotGrid.position.set(point.x,.024,point.z);plotGrid.visible=true;
@@ -1333,7 +1341,7 @@ function prodUI(){const P=$('#prod');if(!sel||!B[sel.t].prod||inMenu){P.classLis
   P.classList.remove('hide');document.documentElement.classList.add('prodon');
   const key=b.id+'|'+(inTut()?1:0)+'|'+b.grade;
   if(prodFor!==key){prodFor=key;slotSig='';const cards=d.prod.map(k=>`<button class="pc" data-p="${k}">${mIco(k,'big')}<b>${MAT[k].n}</b><span class="tm">${jobTime(b,k)}s</span><span class="nds"></span></button>`).join('');
-    P.innerHTML=`<div class="phead"><b>${d.n}</b><span id="pInfo"></span><button class="x" id="pX" aria-label="Fechar">×</button></div>${FACILITY_NEEDS[b.t]?'<div id="pUpgrade"></div>':''}<div class="prow"><div class="slots" id="pSlots"></div><div class="cards">${cards}</div></div>`;}
+    P.innerHTML=`<div class="phead"><b>${d.n}</b><span id="pInfo"></span><button class="btn" id="pMove">Mover</button><button class="x" id="pX" aria-label="Fechar">×</button></div>${FACILITY_NEEDS[b.t]?'<div id="pUpgrade"></div>':''}<div class="prow"><div class="slots" id="pSlots"></div><div class="cards">${cards}</div></div>`;}
   const up=P.querySelector('#pUpgrade');
   if(up){const html=facilityUpgradeMarkup(b);if(up._html!==html){up.innerHTML=html;up._html=html;}}
   $('#pInfo').textContent=`${d.seq?'Faz um por vez':'Produz ao mesmo tempo'} · ${b.q.length}/${slotsFor(b)}`;
@@ -1345,7 +1353,7 @@ function prodUI(){const P=$('#prod');if(!sel||!B[sel.t].prod||inMenu){P.classLis
 /* toque rápido (pointerup) para botões de jogo: não depende do 'click', que o celular às vezes engole em toques seguidos */
 function fastTap(root,fn){let d=null;root.addEventListener('pointerdown',e=>{d={x:e.clientX,y:e.clientY,t:e.target};},{passive:true});
   root.addEventListener('pointerup',e=>{if(!d)return;const ok=Math.hypot(e.clientX-d.x,e.clientY-d.y)<12,t=d.t;d=null;if(ok)fn(t,e);});root.addEventListener('click',e=>{if(e.detail===0)fn(e.target,e);});}
-fastTap($('#prod'),t=>{if(t.closest('#pX')){select(null);return;}if(t.closest('#facilityUp')){upgradeFacility(sel);return;}if(t.closest('#pCol')){collect(sel);return;}const c=t.closest('.pc');if(c&&sel)enqueue(sel,c.dataset.p);});
+fastTap($('#prod'),t=>{if(t.closest('#pMove')){startPlotMove();return;}if(t.closest('#pX')){select(null);return;}if(t.closest('#facilityUp')){upgradeFacility(sel);return;}if(t.closest('#pCol')){collect(sel);return;}const c=t.closest('.pc');if(c&&sel)enqueue(sel,c.dataset.p);});
 /* depósito */
 function depUI(){const items=Object.keys(MAT);$('#depBar').style.width=Math.min(100,stored()/S.cap*100)+'%';$('#depT').textContent=`${stored()} de ${S.cap} itens`;const up=200+S.cap*15;$('#depUp').textContent=`Ampliar +10 · ${up} moedas`;$('#depUp').dataset.c=up;
   $('#depList').innerHTML=items.map(k=>{const n=S.inv[k]||0;return `<div class="drow${n?'':' zero'}">${mIco(k,'big')}<span><b>${MAT[k].n}</b><small>Vale ${MAT[k].sell} moedas</small></span><span class="dn">${n}</span><button class="btn" data-sell="${k}" ${n?'':'disabled'}>Vender 1</button><button class="btn" data-sellall="${k}" ${n>1?'':'disabled'}>Todos</button></div>`;}).join('');}
@@ -1451,12 +1459,13 @@ addEventListener('beforeunload',save);
 /* ---------- context bar (touch-friendly actions) ---------- */
 const ctx=document.createElement('div');ctx.id='ctx';ctx.className='panel hide';$('#app').appendChild(ctx);
 let ctxKey='';
-function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?(roadPts.length>=2?'road2':'road'):tool==='demolish'?'dem':'';
+function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?(roadPts.length>=2?'road2':'road'):tool==='demolish'?'dem':tool==='move'?'move':'';
   if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);
   ctx.innerHTML=k==='place'?`<button class="btn" data-x="rl">Girar ⟲</button><button class="btn" data-x="rr">Girar ⟳</button><button class="btn" data-x="al">Alinhar à rua</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road2'?`<button class="btn pri" data-x="ok">Concluir rua</button><button class="btn" data-x="undo">Desfazer ponto</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road'?`<span class="objp" style="margin:0 6px">Arraste para desenhar a rua ou toque nos pontos</span><button class="btn" data-x="no">Cancelar</button>`
-    :k==='dem'?`<span class="objp" style="margin:0 6px">Toque numa construção ou rua</span><button class="btn" data-x="no">Sair</button>`:'';}
+    :k==='dem'?`<span class="objp" style="margin:0 6px">Toque numa construção ou rua</span><button class="btn" data-x="no">Sair</button>`
+    :k==='move'?`<span class="objp" style="margin:0 6px">Arraste a construção e solte no novo lote.</span><button class="btn" data-x="no">Cancelar</button>`:'';}
 ctx.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;
   if(x==='rl'||x==='rr'){if(align&&B[placeT].cat!=='dec')setAlign(false);manualRot+=(x==='rl'?1:-1)*TURN;}
   if(x==='al')setAlign(!align);if(x==='ok')finishRoad();if(x==='undo'){roadPts.pop();ctxKey='';}

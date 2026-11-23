@@ -652,3 +652,5 @@ html.infoon #side,html.infoon #cats{display:none!important}
   #menu .mrow{min-height:34px}
   #menu .mcard h1{font-size:clamp(34px,8vw,74px)}
 }
+
+#pMove{min-height:32px;height:auto;padding:5px 10px;flex:none}
