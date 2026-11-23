@@ -1074,7 +1074,7 @@ function setCatUI(){$$('.cat').forEach(b=>b.classList.toggle('on',b.dataset.c===
 $('#cats').addEventListener('click',e=>{const b=e.target.closest('.cat');if(!b)return;const c=b.dataset.c;
   if(c==='rua'){setTool(tool==='road'?'select':'road');openCat=null;}else if(c==='dem'){setTool(tool==='demolish'?'select':'demolish');openCat=null;}else{openCat=openCat===c?null:c;if(tool!=='place')setTool('select');}setCatUI();});
 $('#tray').addEventListener('click',e=>{if(e.target.closest('.trayx')){openCat=null;if(tool==='place')setTool('select');setCatUI();return;}const b=e.target.closest('.item');if(!b)return;const t=b.dataset.t;placeT=t;openCat=null;setTool('place');setCatUI();canvas.focus();});
-let ghost=null,movingPlot=null,pendingPlot=null;
+let ghost=null,movingPlot=null,pendingPlot=null,initialPlot=null;
 const plotGrid=new THREE.GridHelper(28,14,0xffdea0,0xffdea0);
 plotGrid.position.y=.024;plotGrid.material.transparent=true;plotGrid.material.opacity=.33;
 plotGrid.visible=false;scene.add(plotGrid);
@@ -1114,8 +1114,12 @@ const hoverRing=new THREE.Mesh(new THREE.RingGeometry(.88,1,48),new THREE.MeshBa
 const selRing=new THREE.Mesh(new THREE.RingGeometry(.85,1,48),new THREE.MeshBasicMaterial({color:'#f4c95d',transparent:true,opacity:.9,depthWrite:false}));selRing.rotation.x=-Math.PI/2;selRing.position.y=.14;selRing.visible=false;scene.add(selRing);
 let roadPrev=null;
 function setTool(t){if(tool==='move'){down=null;selRing.visible=!!sel;}else if(tool==='place')down=null;
-  tool=t;movingPlot=null;pendingPlot=null;dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
-  if(t==='place'){ghost=createPlotGhost(placeT);ghost.visible=false;manualRot=0;}
+  tool=t;movingPlot=null;pendingPlot=null;initialPlot=null;dropPlotGhost();if(roadPrev){scene.remove(roadPrev);roadPrev.geometry.dispose();roadPrev.material.dispose();roadPrev=null;}roadPts=[];ring.visible=false;
+  if(t==='place'){
+    ghost=createPlotGhost(placeT);ghost.visible=false;manualRot=0;
+    initialPlot={x:cam.x,z:cam.z};
+  }
+  document.documentElement.classList.toggle('placing',t==='place');
   if(t!=='place')placeT=null;$('#tip').classList.add('hide');setCatUI();}
 function plotError(t,x,z,a,existing){
   const d=B[t],radius=existing?.r??d.r,ld=landDist(x,z);
@@ -1171,8 +1175,7 @@ function confirmPlacement(){
   const t=placeT,p=placement(t,pendingPlot);
   if(p.bad){updatePlacementControls(p);return;}
   // Consume the pending lot once. A second tap requires choosing another location.
-  pendingPlot=null;ghost.visible=false;plotGrid.visible=false;ring.visible=false;
-  updatePlacementControls(null);
+  setTool('select');
   pay(B[t].cost);
   const b=addBuilding({t,x:p.x,z:p.z,a:p.a,anim:true});
   gainXP(Math.max(1,Math.round((B[t].cost.m||0)/25)));
@@ -1551,28 +1554,46 @@ canvas.addEventListener('pointerdown',e=>{
   canvas.focus({preventScroll:true});freezeCamera();setMouse(point,space);
   down={id:e.pointerId,b:e.button,start:point,last:point,moved:false,touch:touchMode};
   if(e.button!==0||inMenu||photo)return;
+  if(tool==='place'){beginPlotDrag();return;}
   const gp=groundPt();
   if(!gp)return;
-  if(tool==='place'){
-    down.plot=true;
-    if(pendingPlot&&ghost?.visible&&dist(gp,ghost.position)<=B[placeT].r+.35){
-      down.plotOffset={x:pendingPlot.x-gp.x,z:pendingPlot.z-gp.z};
-    }
-  }
   if(tool==='move'&&movingPlot&&pickB()===movingPlot){
     down.building=movingPlot;
     down.offset={x:movingPlot.x-gp.x,z:movingPlot.z-gp.z};
   }
   if(tool==='road'){down.road=true;down.startPt=snapPt(gp);down.before=roadPts.length;}
 });
+const plotPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),plotHit=new THREE.Vector3();
+function beginPlotDrag(){
+  const aim=pendingPlot??initialPlot;
+  ray.setFromCamera(mouse,camera);
+  let hit;
+  if(ghost?.visible&&aim){
+    ghost.updateMatrixWorld(true);
+    hit=ray.intersectObject(ghost,true)[0];
+  }
+  const grabbed=hit?.point;
+  down.plot=true;
+  down.plotHeight=grabbed?.y??0;
+  down.plotOffset=grabbed?{x:ghost.position.x-grabbed.x,z:ghost.position.z-grabbed.z}:null;
+  down.plotPoint=aim;
+  updatePlotDrag();
+}
+function updatePlotDrag(){
+  ray.setFromCamera(mouse,camera);
+  plotPlane.constant=-down.plotHeight;
+  if(ray.ray.intersectPlane(plotPlane,plotHit)){
+    down.plotPoint=placementAim({x:plotHit.x,z:plotHit.z},down.plotOffset);
+  }
+}
 function dragPointer(point,space){
+  if(down.plot&&tool==='place'){updatePlotDrag();return;}
   if(!down.moved){
     if(Math.hypot(point.x-down.start.x,point.y-down.start.y)<(down.touch?7:4))return;
     down.moved=true;
   }
   const previous=down.last;
   down.last=point;
-  if(down.plot&&tool==='place')return;
   if(down.building&&tool==='move'){
     if(!ghost)ghost=createPlotGhost(movingPlot.t,movingPlot);
     return;
@@ -1621,7 +1642,8 @@ function finishPointer(e,commit){
   }
   const space=canvasSpace(),point=localPoint(e.clientX,e.clientY,space);
   setMouse(point,space);
-  if(down.moved&&(point.x!==down.last.x||point.y!==down.last.y))dragPointer(point,space);
+  if(down.plot&&tool==='place')updatePlotDrag();
+  else if(down.moved&&(point.x!==down.last.x||point.y!==down.last.y))dragPointer(point,space);
   const d=down;down=null;
   const gp=groundPt();
   if(drawing){
@@ -1638,7 +1660,7 @@ function finishPointer(e,commit){
   }
   if(inMenu||photo)return;
   if(d.plot&&tool==='place'){
-    if(gp)pendingPlot=placementAim(gp,d.plotOffset);
+    if(d.plotPoint)pendingPlot=d.plotPoint;
     return;
   }
   if(d.moved)return;
@@ -1683,21 +1705,25 @@ function placementAim(point,offset){
 let roadPreviewKey='';
 function previewFrame(){const tip=$('#tip');ctxBar();plotGrid.visible=false;if(inMenu||photo){tip.classList.add('hide');return;}const gp=groundPt();let html='';
   const placing=tool==='place';
-  const aim=placing?(down?.plot?placementAim(gp,down.plotOffset):pendingPlot??(touchMode?null:gp)):
+  const aim=placing?(down?.plot?down.plotPoint:pendingPlot??initialPlot??(touchMode?null:gp)):
     movingPlot?placementAim(gp,down?.offset):null;
   const p=aim&&(placing||movingPlot)?placement(movingPlot?.t??placeT,aim,movingPlot):null;
   if(placing){
     ghost.visible=!!p;
     if(!p)ring.visible=false;
     updatePlacementControls(p);
+    positionPlacementControls(p);
   }
   if(ghost&&p){
     const t=movingPlot?.t??placeT,d=B[t];
     plotGrid.position.set(p.x,.024,p.z);plotGrid.visible=!d.coast;
     ghost.position.set(p.x,0,p.z);ghost.rotation.y=p.a;ghostMat.emissive.set(p.bad?'#8b1e1e':p.warn?'#7a5c10':'#1f6b33');
     ring.visible=!!d.rad;if(d.rad){ring.scale.setScalar(d.rad);ring.position.x=p.x;ring.position.z=p.z;}
-    const cov=d.cap?'<br>'+NEEDS[d.tier].map(n=>{const ok=n==='comida'?(S.f>.5||sand()):buildings.some(s=>B[s.t].serv===n&&s.conn&&Math.hypot(s.x-p.x,s.z-p.z)<=B[s.t].rad);return `<span style="color:${ok?'var(--ok)':'var(--bad)'}">${ok?'✓':'✗'} ${NEEDN[n]}</span>`;}).join(' · '):'';
-    html=`<b>${d.n}</b><br>${movingPlot?'Solte para mover':sand()?'grátis':costTxt(d.cost)}${cov}${p.bad?`<br><span class="bad">${p.bad}</span>`:p.warn?`<br><span class="warn">${p.warn}</span>`:''}${movingPlot?'':'<br><small>Q/E gira · F alinha à rua · Esc sai</small>'}`;}
+    if(!placing){
+      const cov=d.cap?'<br>'+NEEDS[d.tier].map(n=>{const ok=n==='comida'?(S.f>.5||sand()):buildings.some(s=>B[s.t].serv===n&&s.conn&&Math.hypot(s.x-p.x,s.z-p.z)<=B[s.t].rad);return `<span style="color:${ok?'var(--ok)':'var(--bad)'}">${ok?'✓':'✗'} ${NEEDN[n]}</span>`;}).join(' · '):'';
+      html=`<b>${d.n}</b><br>Solte para mover${cov}${p.bad?`<br><span class="bad">${p.bad}</span>`:p.warn?`<br><span class="warn">${p.warn}</span>`:''}`;
+    }
+  }
   else if(tool==='road'&&gp){
     const point=snapPt(gp),pts=[...roadPts,point],key=pts.map(p=>p.x+','+p.z).join(';');
     plotGrid.position.set(point.x,.024,point.z);plotGrid.visible=true;
@@ -1971,7 +1997,13 @@ const ctx=document.createElement('div');ctx.id='ctx';ctx.className='panel hide';
 let ctxKey='';
 function ctxBar(){const k=inMenu||photo?'':tool==='place'?'place':tool==='road'?(roadPts.length>=2?'road2':'road'):tool==='demolish'?'dem':tool==='move'?'move':'';
   if(k===ctxKey)return;ctxKey=k;ctx.classList.toggle('hide',!k);ctx.classList.toggle('placement-controls',k==='place');
-  ctx.innerHTML=k==='place'?`<span id="placeStatus" role="status">Arraste a prévia até o local.</span><button class="btn pri" data-x="build" disabled>Construir</button><button class="btn" data-x="rl">Girar ⟲</button><button class="btn" data-x="rr">Girar ⟳</button><button class="btn" data-x="al">Alinhar à rua</button><button class="btn" data-x="no">Cancelar</button>`
+  ctx.classList.remove('plot-dragging');ctx.style.transform='';
+  ctx.innerHTML=k==='place'?`<div class="plot-actions">
+      <button type="button" class="plot-accept" data-x="build" aria-label="Construir" title="Construir" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg></button>
+      <button type="button" data-x="rr" aria-label="Girar" title="Girar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1 6m1-11v5h-5"/></svg></button>
+      <button type="button" data-x="al" aria-label="Alinhar à rua" title="Alinhar à rua"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-magnet"/></svg></button>
+      <button type="button" data-x="no" aria-label="Cancelar" title="Cancelar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div><span id="placeStatus" role="status"></span>`
     :k==='road2'?`<button class="btn pri" data-x="ok">Concluir rua</button><button class="btn" data-x="undo">Desfazer ponto</button><button class="btn" data-x="no">Cancelar</button>`
     :k==='road'?`<span class="objp" style="margin:0 6px">Arraste para desenhar a rua ou toque nos pontos</span><button class="btn" data-x="no">Cancelar</button>`
     :k==='dem'?`<span class="objp" style="margin:0 6px">Toque numa construção ou rua</span><button class="btn" data-x="no">Sair</button>`
@@ -1981,9 +2013,30 @@ function updatePlacementControls(p){
   if(!button||!status)return;
   const ready=!!pendingPlot&&!ptrs.size&&!!p&&!p.bad;
   button.disabled=!ready;
-  const message=down?.plot?'Solte para marcar o local.':!pendingPlot?'Arraste a prévia até o local.':
-    p?.bad||p?.warn||'Confira o local e toque em Construir.';
+  ctx.querySelector('[data-x="al"]')?.setAttribute('aria-pressed',String(align));
+  const message=pendingPlot?(p?.bad||p?.warn||''):'Arraste';
+
   if(status.textContent!==message)status.textContent=message;
+}
+const controlAnchor=new THREE.Vector3(),controlEdge=new THREE.Vector3();
+function positionPlacementControls(p){
+  const dragging=!!down?.plot||ptrs.size>1;
+  ctx.classList.toggle('plot-dragging',dragging);
+  const pose=p??{x:cam.x,z:cam.z};
+  const height=(ghost?.userData.h||2)*.38;
+  controlAnchor.set(pose.x,height,pose.z).project(camera);
+  const {width,height:viewportHeight}=canvasSpace();
+  const x=(controlAnchor.x+1)*width/2,y=(1-controlAnchor.y)*viewportHeight/2;
+  const r=B[placeT].r,axes=camera.matrixWorld.elements;
+  controlEdge.set(pose.x+axes[0]*r,height,pose.z+axes[2]*r).project(camera);
+  const separation=Math.min(120,Math.abs(controlEdge.x-controlAnchor.x)*width/2)+8;
+  const w=ctx.offsetWidth||152,h=ctx.offsetHeight||44;
+  const safe=8,left=x-separation-w,right=x+separation;
+  const preferred=right+w<=width-safe?right:left;
+  const px=clamp(preferred,safe,Math.max(safe,width-w-safe));
+  const top=Math.min(50,viewportHeight-h-safe);
+  const py=clamp(y-h/2,Math.max(safe,top),Math.max(safe,viewportHeight-h-safe));
+  ctx.style.transform=`translate(${Math.round(px)}px,${Math.round(py)}px)`;
 }
 ctx.addEventListener('click',e=>{const x=e.target.closest('[data-x]')?.dataset.x;if(!x)return;
   if(x==='build'){confirmPlacement();return;}

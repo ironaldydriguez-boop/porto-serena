@@ -672,6 +672,15 @@ html.infoon #side,html.infoon #cats{display:none!important}
 @keyframes request-in{from{opacity:0;transform:translateY(4px) scale(.97)}}
 @media(prefers-reduced-motion:reduce){#bub .bb.r .mi,.req-card{animation:none}}
 
-#ctx.placement-controls{z-index:7}
-#placeStatus{flex-basis:100%;text-align:center;color:#f6f1de;font:600 11px/1.3 var(--ui);padding:1px 4px}
-#ctx .btn[data-x="build"]:disabled{opacity:.5;cursor:default}
+#ctx.placement-controls{left:0;top:0;right:auto;bottom:auto!important;width:max-content;max-width:calc(100% - 16px);padding:0;border:0;border-radius:0;gap:3px;z-index:7;flex-direction:column;align-items:center;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
+#ctx.placement-controls.plot-dragging{visibility:hidden}
+.plot-actions{display:flex;gap:2px;padding:3px;border:1px solid #ffffff32;border-radius:12px;background:#102a30ec;box-shadow:0 3px 10px #0b19264d}
+.plot-actions button{display:grid;place-items:center;flex:none;width:34px;height:34px;border:0;border-radius:8px;padding:0;background:#ffffff0e;color:#f3f7e9;pointer-events:auto;touch-action:manipulation}
+.plot-actions svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.plot-actions button[aria-pressed="true"]{color:#a5ebcb;background:#56ab8330}
+.plot-actions .plot-accept{background:#b1e3a7;color:#143823}
+.plot-actions .plot-accept:disabled{background:#ffffff12;color:#afbfb9;opacity:.6;pointer-events:none}
+.plot-actions button:focus-visible{outline:2px solid #f7dca0;outline-offset:-2px}
+#placeStatus{max-width:150px;padding:3px 6px;border-radius:6px;background:#102a30ec;color:#fff1cd;text-align:center;font:600 10px/1.2 var(--ui)}
+#placeStatus:empty{display:none}
+html.placing #cats{display:none!important}
