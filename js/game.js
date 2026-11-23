@@ -1136,68 +1136,181 @@ function toggleMusic(){try{if(!actx){actx=new (window.AudioContext||window.webki
 $('#bMusic').onclick=toggleMusic;
 
 /* ---------- input (mouse + touch) ---------- */
-/* com o celular em pé o jogo inteiro é girado 90°: converte o toque da tela para as coordenadas do jogo */
-let ROT=false;const AX=e=>ROT?e.clientY:e.clientX,AY=e=>ROT?innerWidth-e.clientX:e.clientY;
+let ROT=false;
 const appW=()=>ROT?innerHeight:innerWidth,appH=()=>ROT?innerWidth:innerHeight;
-const appRect=()=>({left:0,top:0,width:canvas.clientWidth||appW(),height:canvas.clientHeight||appH()});
-function toApp(r){return ROT?{left:r.top,top:innerWidth-r.right,width:r.height,height:r.width}:{left:r.left,top:r.top,width:r.width,height:r.height};}
-let down=null,keys={},lastClick=0,touchMode=matchMedia('(pointer:coarse)').matches;const ptrs=new Map();let pinch=null,drawing=false;
+function canvasSpace(){
+  const bounds=canvas.getBoundingClientRect();
+  const width=canvas.clientWidth||appW(),height=canvas.clientHeight||appH();
+  return {bounds,width,height,sx:width/((ROT?bounds.height:bounds.width)||width),
+    sy:height/((ROT?bounds.width:bounds.height)||height)};
+}
+function localPoint(x,y,space=canvasSpace()){
+  const {bounds,sx,sy}=space;
+  return ROT?{x:(y-bounds.top)*sx,y:(bounds.left+bounds.width-x)*sy}:
+    {x:(x-bounds.left)*sx,y:(y-bounds.top)*sy};
+}
+function toApp(r){
+  const space=canvasSpace(),a=localPoint(r.left,r.top,space),b=localPoint(r.right,r.bottom,space);
+  return {left:Math.min(a.x,b.x),top:Math.min(a.y,b.y),width:Math.abs(a.x-b.x),height:Math.abs(a.y-b.y)};
+}
+let down=null,keys={},lastClick=0,touchMode=matchMedia('(pointer:coarse)').matches;
+const ptrs=new Map();let pinch=null,drawing=false,mx=0,my=0;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-function setMouse(e){const rc=appRect();mouse.x=(AX(e)-rc.left)/rc.width*2-1;mouse.y=-((AY(e)-rc.top)/rc.height)*2+1;mx=AX(e);my=AY(e);}
-function pinchInfo(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};}
+function setMouse(point,space=canvasSpace()){
+  mx=point.x;my=point.y;
+  mouse.set(mx/space.width*2-1,1-my/space.height*2);
+}
+function pinchInfo(){
+  const [a,b]=ptrs.values(),dx=b.x-a.x,dy=b.y-a.y;
+  return {span:Math.hypot(dx,dy),angle:Math.atan2(dy,dx),center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+}
 const angDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
-function camPan(dx,dy){const {f,r}=camVecs(),k=cam.dist*.0017;panBy(-dx*r.x*k+dy*f.x*k,-dx*r.z*k+dy*f.z*k);}
-/* câmera ancorada: o ponto da cidade sob o dedo (ou cursor) continua sob o dedo ao dar zoom, girar ou arrastar */
-const tcam=new THREE.PerspectiveCamera(),tray=new THREE.Raycaster();
-const tgt=()=>({x:cam.tx,z:cam.tz,yaw:cam.tyaw,pitch:cam.tpitch,dist:cam.tdist});
-function groundAt(sx,sy,p){const rc=appRect();Object.assign(tcam,{fov:camera.fov,aspect:camera.aspect,near:camera.near,far:camera.far});tcam.updateProjectionMatrix();
-  const cp=Math.cos(p.pitch);tcam.position.set(p.x+Math.sin(p.yaw)*cp*p.dist,Math.sin(p.pitch)*p.dist,p.z+Math.cos(p.yaw)*cp*p.dist);tcam.lookAt(p.x,0,p.z);tcam.updateMatrixWorld();
-  tray.setFromCamera(new THREE.Vector2((sx-rc.left)/rc.width*2-1,-((sy-rc.top)/rc.height)*2+1),tcam);const o=new THREE.Vector3();
-  if(!tray.ray.intersectPlane(plane,o))return null;return Math.hypot(o.x-p.x,o.z-p.z)>220?null:o;}
-function snapCam(){cam.x=cam.tx;cam.z=cam.tz;cam.yaw=cam.tyaw;cam.pitch=cam.tpitch;cam.dist=cam.tdist;}
-function anchored(ox,oy,nx,ny,change){const P=groundAt(ox,oy,tgt());change();const Q=groundAt(nx,ny,tgt());
-  if(P&&Q){cam.tx=clamp(cam.tx+P.x-Q.x,-MAPB,MAPB);cam.tz=clamp(cam.tz+P.z-Q.z,-MAPB,MAPB);}snapCam();}
-canvas.addEventListener('pointerdown',e=>{arrivalTime=0;canvas.focus();touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,{x:AX(e),y:AY(e)});try{canvas.setPointerCapture(e.pointerId);}catch(_){}
-  if(ptrs.size===2){if(down?.plot||down?.building){clearMovePreview();down=null;return;}const p=pinchInfo();pinch={...p,d0:p.d,a0:p.ang,x0:p.cx,y0:p.cy,mode:null};if(drawing)cancelDraw();if(down)down.moved=true;return;}if(ptrs.size>2)return;
-  setMouse(e);down={b:e.button,x:AX(e),y:AY(e),moved:false,touch:touchMode};
-  if(e.button===0&&!inMenu&&!photo){
-    const gp=groundPt();
-    if(tool==='place'&&gp){down.plot=true;freezeCamera();}
-    if(tool==='move'&&gp&&movingPlot&&pickB()===movingPlot){
-      down.building=movingPlot;
-      down.offset={x:movingPlot.x-gp.x,z:movingPlot.z-gp.z};
-      freezeCamera();
-    }
+const gestureCamera=new THREE.PerspectiveCamera(),gestureRay=new THREE.Raycaster(),gestureNDC=new THREE.Vector2();
+const gestureBefore=new THREE.Vector3(),gestureAfter=new THREE.Vector3();
+function groundAt(point,space,result){
+  const {tx,tz,tyaw,tpitch,tdist}=cam;
+  gestureCamera.projectionMatrix.copy(camera.projectionMatrix);
+  gestureCamera.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+  const horizontal=Math.cos(tpitch)*tdist;
+  gestureCamera.position.set(tx+Math.sin(tyaw)*horizontal,Math.sin(tpitch)*tdist,tz+Math.cos(tyaw)*horizontal);
+  gestureCamera.lookAt(tx,0,tz);gestureCamera.updateMatrixWorld();
+  gestureNDC.set(point.x/space.width*2-1,1-point.y/space.height*2);
+  gestureRay.setFromCamera(gestureNDC,gestureCamera);
+  return !!gestureRay.ray.intersectPlane(plane,result)&&Math.hypot(result.x-tx,result.z-tz)<Math.min(250,tdist*3.5);
+}
+function syncGestureCamera(){
+  cam.x=cam.tx;cam.z=cam.tz;cam.yaw=cam.tyaw;cam.pitch=cam.tpitch;cam.dist=cam.tdist;
+  updateCam(0);camera.updateMatrixWorld();
+}
+function navigate(from,to,space,{scale=1,turn=0,tilt=0}={}){
+  const dx=to.x-from.x,dy=to.y-from.y,oldDistance=cam.tdist;
+  const hit=groundAt(from,space,gestureBefore);
+  cam.tdist=clamp(oldDistance*scale,14,230);
+  cam.tyaw+=turn;cam.tpitch=clamp(cam.tpitch+tilt,.35,1.45);
+  const units=2*oldDistance*Math.tan(camera.fov*Math.PI/360)/space.height;
+  if(hit&&groundAt(to,space,gestureAfter)){
+    const x=gestureBefore.x-gestureAfter.x,z=gestureBefore.z-gestureAfter.z;
+    const limit=Math.hypot(dx,dy)*units*4+Math.abs(cam.tdist-oldDistance)*2+Math.abs(turn)*oldDistance*2;
+    if(Math.hypot(x,z)<=limit){panBy(x,z);syncGestureCamera();return;}
   }
-  if(tool==='road'&&e.button===0&&!inMenu&&!photo){const gp=groundPt();if(gp){down.road=true;down.startPt=snapPt(gp);down.before=roadPts.length;}}});
-canvas.addEventListener('pointermove',e=>{const pp=ptrs.get(e.pointerId);if(pp){pp.x=AX(e);pp.y=AY(e);}
-  if(ptrs.size===2&&pinch){const n=pinchInfo();
-    // gesto inteligente: decide uma única ação (zoom, girar ou mover) e mantém até soltar os dedos
-    if(!pinch.mode){const sc=Math.abs(Math.log(n.d/pinch.d0)),an=Math.abs(angDiff(n.ang,pinch.a0)),mv=Math.hypot(n.cx-pinch.x0,n.cy-pinch.y0);
-      if(an>.32&&sc<.06)pinch.mode='rot';else if(sc>.05||mv>14)pinch.mode='zoom';}
-    if(pinch.mode==='zoom'){const f=Math.max(24,pinch.d)/Math.max(24,n.d);anchored(pinch.cx,pinch.cy,n.cx,n.cy,()=>{cam.tdist=clamp(cam.tdist*f,14,230);});}
-    else if(pinch.mode==='rot'){const da=angDiff(n.ang,pinch.ang);anchored(pinch.cx,pinch.cy,n.cx,n.cy,()=>{cam.tyaw-=da;});}
-    Object.assign(pinch,{d:n.d,ang:n.ang,cx:n.cx,cy:n.cy});return;}
-  const dx=AX(e)-mx,dy=AY(e)-my;setMouse(e);
-  if(!down)return;if(Math.hypot(AX(e)-down.x,AY(e)-down.y)>(down.touch?10:5))down.moved=true;if(!down.moved)return;
+  // Perto do horizonte, a projeção pode passar muito longe do ponto tocado.
+  const {f,r}=camVecs();
+  panBy((-dx*r.x+dy*f.x)*units,(-dx*r.z+dy*f.z)*units);
+  syncGestureCamera();
+}
+function beginPinch(){const current=pinchInfo();pinch={current,twist:0,turning:false,pending:false};}
+function updatePinch(){
+  if(!pinch?.pending)return;
+  pinch.pending=false;
+  const space=canvasSpace();
+  const current=pinchInfo(),previous=pinch.current;
+  let scale=1,turn=0;
+  if(current.span>=24&&previous.span>=24){
+    scale=clamp(previous.span/current.span,.72,1.38);
+    const delta=angDiff(current.angle,previous.angle);
+    if(pinch.turning)turn=-clamp(delta,-.25,.25);
+    else{
+      pinch.twist+=delta;
+      if(Math.abs(pinch.twist)>.17)pinch.turning=true;
+    }
+  }else{
+    pinch.twist=0;pinch.turning=false;
+  }
+  navigate(previous.center,current.center,space,{scale,turn});
+  pinch.current=current;
+}
+function cancelInput(){
+  if(drawing)cancelDraw();
+  clearMovePreview();ptrs.clear();pinch=null;down=null;
+}
+canvas.addEventListener('pointerdown',e=>{
+  const space=canvasSpace(),point=localPoint(e.clientX,e.clientY,space);
+  touchMode=e.pointerType==='touch';ptrs.set(e.pointerId,point);
+  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+  if(ptrs.size>1){
+    if(drawing)cancelDraw();
+    clearMovePreview();down=null;
+    if(ptrs.size===2){freezeCamera();beginPinch();}
+    else pinch=null;
+    return;
+  }
+  canvas.focus({preventScroll:true});freezeCamera();setMouse(point,space);
+  down={id:e.pointerId,b:e.button,start:point,last:point,moved:false,touch:touchMode};
+  if(e.button!==0||inMenu||photo)return;
+  const gp=groundPt();
+  if(!gp)return;
+  if(tool==='place')down.plot=true;
+  if(tool==='move'&&movingPlot&&pickB()===movingPlot){
+    down.building=movingPlot;
+    down.offset={x:movingPlot.x-gp.x,z:movingPlot.z-gp.z};
+  }
+  if(tool==='road'){down.road=true;down.startPt=snapPt(gp);down.before=roadPts.length;}
+});
+function dragPointer(point,space){
+  if(!down.moved){
+    if(Math.hypot(point.x-down.start.x,point.y-down.start.y)<(down.touch?7:4))return;
+    down.moved=true;
+  }
+  const previous=down.last;
+  down.last=point;
   if(down.plot&&tool==='place')return;
   if(down.building&&tool==='move'){
     if(!ghost)ghost=createPlotGhost(movingPlot.t,movingPlot);
     return;
   }
   if(down.road&&tool==='road'){drawRoadMove();return;}
-  if(down.b===2||inMenu){cam.tyaw-=dx*.006;cam.tpitch=clamp(cam.tpitch+dy*.004,.35,1.45);}
-  else if(down.b===1||(down.b===0&&(tool==='select'||tool==='demolish')))anchored(AX(e)-dx,AY(e)-dy,AX(e),AY(e),()=>{});});
+  if(down.b===2||inMenu){
+    cam.tyaw-=(point.x-previous.x)*.006;
+    cam.tpitch=clamp(cam.tpitch+(point.y-previous.y)*.004,.35,1.45);
+    syncGestureCamera();
+  }else if(down.pan||down.b===1||(down.b===0&&(tool==='select'||tool==='demolish'||tool==='move'||photo))){
+    navigate(previous,point,space);
+  }
+}
+canvas.addEventListener('pointermove',e=>{
+  const space=canvasSpace(),point=localPoint(e.clientX,e.clientY,space);
+  setMouse(point,space);
+  if(!ptrs.has(e.pointerId))return;
+  ptrs.set(e.pointerId,point);
+  if(ptrs.size===2&&pinch)pinch.pending=true;
+  else if(ptrs.size===1&&down?.id===e.pointerId)dragPointer(point,space);
+});
 /* desenhar rua arrastando: o dedo (ou mouse) traça a curva, a câmera fica parada */
 function drawRoadMove(){if(!groundPt())return;
   if(!drawing){drawing=true;const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-down.startPt.x,l.z-down.startPt.z)>1.5)roadPts.push(down.startPt);}
 }
 function cancelDraw(){drawing=false;if(down&&down.road)roadPts.length=down.before;}
-function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;}
-canvas.addEventListener('pointercancel',e=>{endPtr(e);if(drawing)cancelDraw();clearMovePreview();down=null;drawing=false;});
-canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;const d=down;down=null;
-  if(drawing){drawing=false;setMouse(e);const gp=groundPt();if(gp){const p=snapPt(gp),l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.2)roadPts.push(p);}if(roadPts.length>=2)finishRoad();return;}
-  setMouse(e);const gp=groundPt();
+function finishPointer(e,commit){
+  if(!ptrs.has(e.pointerId))return;
+  const multiple=ptrs.size>1;
+  if(commit&&ptrs.size===2)updatePinch();
+  ptrs.delete(e.pointerId);
+  if(multiple){
+    pinch=null;
+    if(ptrs.size===2)beginPinch();
+    else if(ptrs.size===1){
+      const [[id,point]]=ptrs;
+      down={id,b:0,start:point,last:point,moved:true,touch:true,pan:true};
+      setMouse(point);
+    }
+    return;
+  }
+  if(!down||down.id!==e.pointerId)return;
+  if(!commit){
+    if(drawing)cancelDraw();
+    clearMovePreview();down=null;return;
+  }
+  const space=canvasSpace(),point=localPoint(e.clientX,e.clientY,space);
+  setMouse(point,space);
+  if(down.moved&&(point.x!==down.last.x||point.y!==down.last.y))dragPointer(point,space);
+  const d=down;down=null;
+  const gp=groundPt();
+  if(drawing){
+    drawing=false;
+    if(gp){const p=snapPt(gp),l=roadPts[roadPts.length-1];if(!l||dist(l,p)>1.2)roadPts.push(p);}
+    if(roadPts.length>=2)finishRoad();
+    return;
+  }
   if(tool==='move'){
     clearMovePreview();
     if(d.building===movingPlot&&d.moved&&gp&&buildings.includes(movingPlot)&&
@@ -1212,14 +1325,25 @@ canvas.addEventListener('pointerup',e=>{endPtr(e);if(!down||ptrs.size)return;con
   if(tool==='place'&&gp)tryPlace(gp);
   else if(tool==='road'&&gp){if(dbl&&roadPts.length>=2&&!d.touch){finishRoad();return;}const p=snapPt(gp);const l=roadPts[roadPts.length-1];if(!l||Math.hypot(l.x-p.x,l.z-p.z)>1.5){roadPts.push(p);sfx('tick');}}
   else if(tool==='demolish'){const b=pickB();if(b)demolish(b);else if(gp){const n=nearestRoad(gp.x,gp.z);if(n&&n.d<1.8){if(!sand())S.m+=Math.floor(n.r.len*.6);sfx('demolish');removeRoad(n.r);recompute();log('Rua removida.');hud();}}}
-  else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}});
-canvas.addEventListener('wheel',e=>{e.preventDefault();if(down?.plot||down?.building)return;const dy=e.deltaMode===1?e.deltaY*16:e.deltaY,f=Math.exp(clamp(dy,-120,120)*.0018);anchored(AX(e),AY(e),AX(e),AY(e),()=>{cam.tdist=clamp(cam.tdist*f,14,230);});},{passive:false});
+  else if(tool==='select'){const b=pickB();select(b);if(b)sfx('tick');}
+}
+canvas.addEventListener('pointerup',e=>finishPointer(e,true));
+canvas.addEventListener('pointercancel',e=>finishPointer(e,false));
+canvas.addEventListener('lostpointercapture',e=>finishPointer(e,false));
+addEventListener('blur',()=>{cancelInput();keys={};});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(ptrs.size)return;
+  const space=canvasSpace(),point=localPoint(e.clientX,e.clientY,space);
+  const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?space.height:1);
+  if(!delta)return;
+  freezeCamera();setMouse(point,space);
+  navigate(point,point,space,{scale:Math.exp(clamp(delta,-120,120)*.0018)});
+},{passive:false});
 /* a página não dá zoom nem escorrega: os menus ficam parados */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#tray,.hud-res,#cats,.mcard,.modal .panel,#log,#info,#side,.a-step,.rank,.rtree'))e.preventDefault();},{passive:false});
-document.addEventListener('touchend',e=>{if(!e.touches.length&&ptrs.size){ptrs.clear();pinch=null;}},{passive:true});
-let mx=0,my=0;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(inMenu)return;const k=e.code;if(down?.plot||down?.building){if(k==='Escape'){down=null;setTool('select');}return;}
   if(k==='Escape'){if(photo)setPhoto(false);else if(!$$('.modal:not(.hide)').every(m=>m.id==='menu')){$$('.modal').forEach(m=>{if(m.id!=='menu')m.classList.add('hide');});}else if(tool==='road'&&roadPts.length)setTool('road');else{setTool('select');openCat=null;select(null);setCatUI();}}
   if(photo)return;
@@ -1444,8 +1568,9 @@ S=freshState('campaign');starterCity();recompute();S.pop=houses().reduce((a,h)=>
 $('#mCont').classList.toggle('hide',!hasSave());
 let last=performance.now(),acc=0,T=0,saveT=0,cloudT=0;
 function frame(now){const rdt=clamp((now-last)/1000,0,.1);last=Math.max(last,now);T+=rdt;
-  if(inMenu){cam.tyaw+=rdt*.05;cam.tx=0;cam.tz=24;cam.tdist=78;cam.tpitch=.6;S.tod=(S.tod+rdt/200)%1;}
-  else if(!photo){const sp=S.speed;const {f,r}=camVecs(),k=down?.plot||down?.building?0:cam.tdist*.9*rdt;
+  updatePinch();
+  if(inMenu){if(!ptrs.size){cam.tyaw+=rdt*.05;cam.tx=0;cam.tz=24;cam.tdist=78;cam.tpitch=.6;}S.tod=(S.tod+rdt/200)%1;}
+  else if(!photo){const sp=S.speed;const {f,r}=camVecs(),k=ptrs.size?0:cam.tdist*.9*rdt;
     if(keys.KeyW||keys.ArrowUp)panBy(f.x*k,f.z*k);if(keys.KeyS||keys.ArrowDown)panBy(-f.x*k,-f.z*k);if(keys.KeyA||keys.ArrowLeft)panBy(-r.x*k,-r.z*k);if(keys.KeyD||keys.ArrowRight)panBy(r.x*k,r.z*k);
     S.tod+=rdt*sp/420;if(S.tod>=1){S.tod-=1;S.day++;}
     acc+=rdt*sp;while(acc>=1){acc-=1;S.time+=1;tick();}saveT+=rdt;if(saveT>5){saveT=0;save();}}
@@ -1728,6 +1853,7 @@ $('#mCamp').onclick=e=>confirmNew(e.currentTarget,'campaign');$('#mSand').onclic
 
 /* ---------- tela cheia no iPhone, retrato e toque com animação ---------- */
 const isTouch=matchMedia('(pointer:coarse)').matches;
+let layoutWidth=0,layoutHeight=0;
 function fitApp(){const st=navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches;
   const D=document.documentElement,port=innerHeight>innerWidth,authOn=!$('#auth').classList.contains('hide');
   // celular em pé: gira o jogo inteiro para a horizontal (o login continua em pé por causa do teclado)
@@ -1739,6 +1865,7 @@ function fitApp(){const st=navigator.standalone||matchMedia('(display-mode: stan
   D.style.setProperty('--appH',ROT||big?ah+'px':'100%');D.style.setProperty('--gap',big?(ph-innerHeight)+'px':'0px');
   D.style.setProperty('--ph',ph+'px');D.style.setProperty('--aw',aw+'px');D.style.setProperty('--ah',ah+'px');D.style.setProperty('--vw',aw/100+'px');D.style.setProperty('--vh',ah/100+'px');
   // as regras de layout seguem o tamanho do jogo (não o da tela física)
+  if(was!==ROT||aw!==layoutWidth||ah!==layoutHeight){cancelInput();layoutWidth=aw;layoutHeight=ah;}
   const C={w1320:aw<=1320,w900:aw<=900,w700:aw<=700,w600:aw<=600,w430:aw<=430,w380:aw<=380,s700:aw<=700&&ah<=700,x1200:aw>=1200,lc:ah<=520&&aw>ah};
   for(const k in C)D.classList.toggle(k,C[k]);
   resize();}
@@ -1746,7 +1873,7 @@ addEventListener('resize',fitApp);addEventListener('orientationchange',()=>setTi
 new MutationObserver(fitApp).observe($('#auth'),{attributes:true,attributeFilter:['class']});
 function lockLandscape(){if(!isTouch)return;try{const o=screen.orientation;if(o&&o.lock)o.lock('landscape').catch(()=>{});}catch(e){}}
 ['pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target.closest('.btn,.tbtn,.cat,.item,.mrow,.mhero,.speed button,.a-pill,.a-opt,.rnode');if(!t)return;
-  const r=toApp(t.getBoundingClientRect()),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');s.className='rip';s.style.cssText=`width:${d}px;height:${d}px;left:${AX(e)-r.left-d/2}px;top:${AY(e)-r.top-d/2}px`;
+  const point=localPoint(e.clientX,e.clientY),r=toApp(t.getBoundingClientRect()),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');s.className='rip';s.style.cssText=`width:${d}px;height:${d}px;left:${point.x-r.left-d/2}px;top:${point.y-r.top-d/2}px`;
   t.appendChild(s);setTimeout(()=>s.remove(),650);try{if(isTouch&&navigator.vibrate)navigator.vibrate(6);}catch(_){}} ,{passive:true}));
 
 /* ---------- tutorial: a urbanista Lia mostra o caminho ---------- */
@@ -1758,7 +1885,7 @@ let guideObj=null;
 function roadGuide(on){if(guideObj){scene.remove(guideObj);guideObj=null;}if(!on)return;const g=new THREE.Group(),m=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.85,depthWrite:false});
   const dx=RT.b.x-RT.a.x,dz=RT.b.z-RT.a.z,L=Math.hypot(dx,dz),a=Math.atan2(dx,dz);for(let d=2;d<L-2;d+=2.4){const s=new THREE.Mesh(new THREE.BoxGeometry(.5,.08,1.3),m);s.position.set(RT.a.x+dx*d/L,.25,RT.a.z+dz*d/L);s.rotation.y=a;g.add(s);}
   const disc=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,.12,32),new THREE.MeshBasicMaterial({color:'#39d36b',transparent:true,opacity:.85}));disc.position.set(RT.b.x,.2,RT.b.z);g.add(disc);g.userData.disc=disc;scene.add(g);guideObj=g;}
-function flyCam(x,z,d,p){if(down?.plot||down?.building)return;cam.tx=x;cam.tz=z;if(d)cam.tdist=d;if(p)cam.tpitch=p;}
+function flyCam(x,z,d,p){if(ptrs.size)return;cam.tx=x;cam.tz=z;if(d)cam.tdist=d;if(p)cam.tpitch=p;}
 const TUT=[
   {t:'Olá, prefeito(a)! Eu sou a Lia, urbanista de Vice City. A cidade já tem avenidas, prédios e moradores. Vou te ensinar a fazê-la crescer.',btn:'Vamos lá',enter:()=>flyCam(14,-8,92,.78)},
   {t:'Primeiro, uma rua nova. Toque em Ruas.',el:'[data-c=rua]',ok:()=>tool==='road'},
