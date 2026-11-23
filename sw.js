@@ -1,8 +1,8 @@
 // Vice City service worker: rede primeiro (sempre a versão mais nova), cache só quando offline.
 // Nunca guarda chamadas ao Supabase.
-const VERSION = 'vc-v15';
+const VERSION = 'vc-v16';
 const SHELL = ['/', '/index.html', '/css/app.css', '/js/game.js', '/config.js', '/vendor/three.min.js', '/vendor/supabase.js',
-  '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
+  '/icons/screenshot-wide.png', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).catch(() => {}).then(() => self.skipWaiting()));
 });

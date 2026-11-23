@@ -608,3 +608,20 @@ html.tuton #hl{box-shadow:0 0 0 3px #ffd84d,0 0 24px 6px rgba(255,216,77,.55)!im
 html.infoon #side,html.infoon #cats{display:none!important}
 #side{max-height:calc(var(--ah,100vh) - 260px)!important;overflow:hidden}
 :where(html.lc) #info{width:250px;top:calc(max(6px,var(--sat)) + 42px)!important;max-height:calc(var(--ah,100vh) - 56px)!important;padding:10px}
+
+#arrival{position:absolute;inset:0;z-index:10000;display:grid;place-items:center;color:white;transition:opacity .55s ease;isolation:isolate}
+#arrival{background:linear-gradient(180deg,#13394433,#112f353d 48%,#071c26ec),url('/icons/screenshot-wide.png') center/cover,#214550}
+.arrival-title{font:800 clamp(52px,9vw,126px)/1 'Nunito',system-ui,sans-serif;letter-spacing:-.08em;text-shadow:0 4px 28px #102734ae}
+.arrival-status{position:absolute;bottom:12%;width:min(280px,53%);display:grid;gap:10px;text-align:center;font:600 13px/1.4 system-ui,sans-serif;letter-spacing:.04em}
+.arrival-status progress{appearance:none;width:100%;height:4px;border:0;border-radius:4px;overflow:hidden;background:#ffffff42}
+.arrival-status progress::-webkit-progress-bar{background:#ffffff42}
+.arrival-status progress:indeterminate{background:linear-gradient(90deg,transparent,#ffe6a8,transparent) left/45% 100% no-repeat,#ffffff39;animation:harbor-load 1.25s ease-in-out infinite alternate}
+@keyframes harbor-load{to{background-position:right}}
+#arrival.ready{opacity:0;pointer-events:none}
+#menu .mcard{width:min(340px,87%);max-height:85%;overflow:auto;padding:14px 17px}
+#menu .menulogo{max-height:48px;width:auto}#menu .mrow{min-height:36px;padding-block:4px}
+#tray .item{width:86px;flex-basis:86px}#tray .item img{width:54px;height:54px}
+#cats{grid-template-columns:repeat(3,46px)}#cats .cat{width:46px;height:42px;font-size:8px}
+#info{max-width:min(230px,72%)}
+#prod,.modal>.panel{max-height:78%;overflow:auto}
+@media(prefers-reduced-motion:reduce){#arrival,#arrival progress{animation:none;transition:none}}

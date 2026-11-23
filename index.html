@@ -17,10 +17,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=15">
+<link rel="stylesheet" href="/css/app.css?v=16">
 </head>
 <body>
 <div id="app">
+<section id="arrival" role="status" aria-live="polite">
+  <div class="arrival-title">Vice City</div>
+  <div class="arrival-status"><span>Carregando a cidade…</span><progress aria-label="Carregando a cidade"></progress></div>
+</section>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.6 4.9-1.8 1 .3 2.1-1.9 1.9-2.1-.3-1 1.8h-2.7l-1-1.8-2.1.3-1.9-1.9.3-2.1-1.8-1v-2.8l1.8-1-.3-2.1 1.9-1.9 2.1.3 1-1.8h2.7l1 1.8 2.1-.3 1.9 1.9-.3 2.1 1.8 1z" fill="currentColor"/></symbol>
  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></symbol>
@@ -89,6 +93,7 @@
     <button class="tbtn" id="bRes"><svg class="ic"><use href="#i-flask"/></svg><span class="lb">Pesquisa</span><span id="rR"></span></button>
     <button class="tbtn on" id="bAlign"><svg class="ic"><use href="#i-magnet"/></svg><span class="lb">Alinhar à rua</span></button>
     <button class="tbtn" id="bMusic"><svg class="ic"><use href="#i-music"/></svg><span class="lb">Música</span></button>
+    <button class="tbtn" id="visitCity"><svg class="ic"><use href="#i-flag"/></svg><span class="lb">Visitar próximo local</span></button>
     <button class="tbtn" id="bPhoto"><svg class="ic"><use href="#i-camera"/></svg><span class="lb">Modo foto</span></button>
     <button class="tbtn" id="bRank"><svg class="ic"><use href="#i-trophy"/></svg><span class="lb">Ranking</span></button>
     <button class="tbtn" id="bAcc"><svg class="ic"><use href="#i-user"/></svg><span class="lb" id="bAccL">Entrar</span></button>
@@ -296,7 +301,7 @@
 </div>
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/supabase.js"></script>
-<script src="/config.js?v=15"></script>
-<script src="/js/game.js?v=15"></script>
+<script src="/config.js?v=16"></script>
+<script src="/js/game.js?v=16"></script>
 </body>
 </html>
